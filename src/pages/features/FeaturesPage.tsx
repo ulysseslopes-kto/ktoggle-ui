@@ -1,7 +1,15 @@
 import { Plus, Search } from 'lucide-react'
 import { useDeferredValue, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useCreateDraft, useEnvironments, useFeatures, useOpenDrafts, useProjects, useUpdateDraftEnvironment } from '@/api/hooks'
+import {
+  useCanEditProject,
+  useCreateDraft,
+  useEnvironments,
+  useFeatures,
+  useOpenDrafts,
+  useProjects,
+  useUpdateDraftEnvironment,
+} from '@/api/hooks'
 import type { Feature } from '@/api/types'
 import { useAuth } from '@/auth/auth'
 import { Button } from '@/components/ui/Button'
@@ -98,6 +106,8 @@ function FeatureRow({ feature, environments, editable, drafts, onToggle }: {
   drafts: number
   onToggle: (environmentKey: string, enabled: boolean) => void
 }) {
+  const canEditProject = useCanEditProject(feature.projectKey)
+  const canToggle = editable && canEditProject
   return (
     <tr className="hover:bg-surface/60">
       <td className="px-4 py-3">
@@ -122,7 +132,7 @@ function FeatureRow({ feature, environments, editable, drafts, onToggle }: {
               <Toggle
                 size="sm"
                 checked={Boolean(settings?.enabled)}
-                disabled={!editable || feature.archived}
+                disabled={!canToggle || feature.archived}
                 label={`${feature.key} em ${env}`}
                 onChange={(enabled) => onToggle(env, enabled)}
               />

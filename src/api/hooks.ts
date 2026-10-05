@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query'
+import { useAuth } from '@/auth/auth'
 import { api } from './client'
 import type {
   ApiToken,
@@ -395,3 +396,17 @@ export const useDeleteWebhook = () =>
 
 export const useTestWebhook = () =>
   useMutate((id: string) => api<void>(`${V1}/webhooks/${id}/test`, { method: 'POST' }), [['webhooks']])
+
+/**
+ * Whether the signed-in user may change features of this project (mirrors the server rule: admins, or no restriction,
+ * or listed among the project's editor roles or users). The server enforces it either way.
+ */
+export function useCanEditProject(projectKey?: string | null): boolean {
+  const user = useAuth()
+  const projects = useProjects().data ?? []
+  if (!user.can('ktoggle-editor')) return false
+  if (!projectKey || user.can('ktoggle-admin')) return true
+  const project = projects.find((p) => p.key === projectKey)
+  if (!project || project.editorRoles.length + project.editorUsers.length === 0) return true
+  return project.editorUsers.includes(user.username) || project.editorRoles.some((r) => user.hasRole(r))
+}

@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { ArrowLeft, FilePenLine, GitPullRequest, Pencil, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, FilePenLine, GitPullRequest, Lock, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
@@ -8,6 +8,7 @@ import {
   useEnvironments,
   useFeature,
   useFeatureDrafts,
+  useCanEditProject,
   useUpdateDraftEnvironment,
 } from '@/api/hooks'
 import type { EnvironmentSettings, Feature, FeatureDraft, FeatureSnapshot } from '@/api/types'
@@ -35,6 +36,7 @@ export function FeatureDetailPage() {
   const [params, setParams] = useSearchParams()
   const { can } = useAuth()
   const feature = useFeature(key)
+  const canEditLiveProject = useCanEditProject(feature.data?.projectKey)
   const drafts = useFeatureDrafts(key)
   const environments = useEnvironments()
   const createDraft = useCreateDraft()
@@ -63,7 +65,8 @@ export function FeatureDetailPage() {
   const envs = environments.data ?? []
   const current = activeEnv ?? envs.find((e) => e.requiresReview)?.key ?? envs[0]?.key ?? null
   const content: FeatureSnapshot = draft?.proposed ?? snapshotOf(f)
-  const editable = can('ktoggle-editor') && (draft === null || draft.status !== 'PUBLISHED')
+  const projectLocked = can('ktoggle-editor') && !canEditLiveProject
+  const editable = can('ktoggle-editor') && canEditLiveProject && (draft === null || draft.status !== 'PUBLISHED')
   const busy = createDraft.isPending || updateEnvironment.isPending
 
   /** Returns the selected draft, or opens a new one when looking at the live version. */
@@ -109,13 +112,20 @@ export function FeatureDetailPage() {
         feature={f}
         drafts={drafts.data ?? []}
         draft={draft}
-        canEdit={can('ktoggle-editor')}
+        canEdit={can('ktoggle-editor') && canEditLiveProject}
         creating={createDraft.isPending}
         onSelect={(id) => selectDraft(id)}
         onCreate={() => createDraft.mutate({ key: f.key }, { onSuccess: (d) => selectDraft(d.id) })}
         onReview={() => selectDraft(draftId, true)}
         onDiscard={() => draft && discard.mutate({ id: draft.id, action: 'discard' }, { onSuccess: () => selectDraft(LIVE) })}
       />
+      {projectLocked && (
+        <p className="flex items-center gap-2 rounded-md border border-line bg-surface px-4 py-3 text-sm text-soft">
+          <Lock className="size-4 text-kto-red" />
+          Only the editors of project <span className="font-mono text-white">{f.projectKey}</span> can change this feature. You can
+          still read it, test it and review drafts.
+        </p>
+      )}
       <ErrorBanner error={createDraft.error ?? updateEnvironment.error ?? discard.error} />
 
       <Card>

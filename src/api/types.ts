@@ -8,6 +8,10 @@ export interface Project {
   key: string
   name: string
   description?: string | null
+  /** Keycloak roles allowed to change this project's features; with editorUsers empty too, every editor can. */
+  editorRoles: string[]
+  /** Usernames (or token:<name>) allowed to change this project's features. */
+  editorUsers: string[]
   createdAt: string
   updatedAt: string
   version: number
