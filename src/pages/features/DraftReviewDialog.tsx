@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { Badge, ErrorBanner, formatDate, JsonBlock, Spinner, ValueChip } from '@/components/ui/Display'
 import { Textarea } from '@/components/ui/Form'
-import { Toggle } from '@/components/ui/Toggle'
 import { EVENT_LABEL, sectionLabel, STATUS_LABEL, STATUS_TONE } from './draftLabels'
 import { RuleSummary } from './EnvironmentPanel'
 
@@ -210,10 +209,7 @@ function EnvironmentView({ settings }: { settings: EnvironmentSettings | null })
   if (!settings) return <span className="text-sm text-muted">não configurado (desligado)</span>
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-2 text-sm">
-        <Toggle size="sm" checked={settings.enabled} disabled label="Estado" />
-        {settings.enabled ? 'Ligada' : 'Desligada'}
-      </div>
+      <Badge tone={settings.enabled ? 'green' : 'neutral'}>{settings.enabled ? 'Ligada' : 'Desligada'}</Badge>
       {settings.rules.length === 0 ? (
         <p className="text-sm text-muted">Sem regras</p>
       ) : (

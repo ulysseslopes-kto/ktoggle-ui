@@ -15,13 +15,14 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-Usuários de desenvolvimento (Keycloak local): `admin.local/admin`, `editor.local/editor`, `viewer.local/viewer`.
+Usuários de desenvolvimento (Keycloak local, realm `ktoggle`): `admin.local/admin`, `editor.local/editor`,
+`approver.local/approver`, `viewer.local/viewer`.
 
 | Variável | Padrão |
 |---|---|
 | `VITE_API_URL` | `http://localhost:8090` |
 | `VITE_KEYCLOAK_URL` | `http://localhost:8180` |
-| `VITE_KEYCLOAK_REALM` | `mobilt` |
+| `VITE_KEYCLOAK_REALM` | `ktoggle` |
 | `VITE_KEYCLOAK_CLIENT_ID` | `ktoggle-ui` |
 
 ## Telas
@@ -38,4 +39,6 @@ Usuários de desenvolvimento (Keycloak local): `admin.local/admin`, `editor.loca
 
 ## Scripts
 
-`npm run build` (typecheck + build de produção) · `npm test` (Vitest) · `npm run lint` (oxlint)
+`npm run build` (typecheck + build de produção) · `npm test` (Vitest) · `npm run lint` (oxlint) ·
+`npm run test:e2e` (Playwright, contra a stack local subida com `docker compose --profile app up -d --build` no repositório
+ktoggle; screenshots em `e2e-report/screens`)
