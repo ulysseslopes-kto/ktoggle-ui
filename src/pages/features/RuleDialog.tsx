@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { FlaskConical, Percent, Plus, Scale, Target, Trash2 } from 'lucide-react'
+import { CalendarClock, FlaskConical, Percent, Plus, Scale, Target, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useAttributes, useSavedGroups } from '@/api/hooks'
 import type { Json, Rule, ValueType } from '@/api/types'
@@ -8,6 +8,7 @@ import { Dialog } from '@/components/ui/Dialog'
 import { Checkbox, Field, Input, Select } from '@/components/ui/Form'
 import { ConditionEditor } from './ConditionEditor'
 import { equalWeights, nextVariationKey, TRACKING_KEY, weightsAddUp } from './experiments'
+import { fromLocalInput, toLocalInput } from './schedule'
 import { defaultFor, ValueEditor } from './ValueEditor'
 
 const TYPES = [
@@ -81,6 +82,13 @@ function RuleForm({ featureKey, valueType, initial, onCancel, onSave }: {
         ],
   )
 
+  const [startsAt, setStartsAt] = useState(toLocalInput(initial?.schedule?.startsAt))
+  const [endsAt, setEndsAt] = useState(toLocalInput(initial?.schedule?.endsAt))
+  const [scheduled, setScheduled] = useState(Boolean(startsAt || endsAt))
+  const schedule = scheduled ? { startsAt: fromLocalInput(startsAt), endsAt: fromLocalInput(endsAt) } : null
+  const scheduleError =
+    schedule?.startsAt && schedule.endsAt && schedule.endsAt <= schedule.startsAt ? 'The end must be after the start.' : null
+
   const weights = variations.map((v) => v.weight)
   const experimentValid =
     TRACKING_KEY.test(trackingKey) &&
@@ -89,6 +97,7 @@ function RuleForm({ featureKey, valueType, initial, onCancel, onSave }: {
     weightsAddUp(weights)
   const valid =
     condition !== undefined &&
+    !scheduleError &&
     (type === 'force' || Boolean(hashAttribute)) &&
     (type === 'experiment' ? experimentValid : value !== undefined)
 
@@ -108,7 +117,14 @@ function RuleForm({ featureKey, valueType, initial, onCancel, onSave }: {
 
   const save = () => {
     if (!valid) return
-    const base = { id: initial?.id, description: description || null, enabled, condition: condition ?? null, savedGroups }
+    const base = {
+      id: initial?.id,
+      description: description || null,
+      enabled,
+      condition: condition ?? null,
+      savedGroups,
+      schedule: schedule?.startsAt || schedule?.endsAt ? schedule : null,
+    }
     if (type === 'force') {
       onSave({ ...base, type, value: value! })
     } else if (type === 'rollout') {
@@ -292,6 +308,30 @@ function RuleForm({ featureKey, valueType, initial, onCancel, onSave }: {
           <ValueEditor type={valueType} value={value} onChange={setValue} />
         </Field>
       )}
+
+      <div className="space-y-3 rounded-lg border border-line bg-ink/40 p-3">
+        <Checkbox
+          label={<span className="flex items-center gap-1.5"><CalendarClock className="size-4 text-kto-red" /> Schedule this rule</span>}
+          checked={scheduled}
+          onChange={setScheduled}
+        />
+        {scheduled && (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Start" hint="Leave empty to start right away.">
+                <Input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
+              </Field>
+              <Field label="End" hint="Leave empty to never end." error={scheduleError}>
+                <Input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
+              </Field>
+            </div>
+            <p className="text-xs text-muted">
+              Times are in your time zone ({Intl.DateTimeFormat().resolvedOptions().timeZone}). Outside the window the rule is
+              left out of the SDK payload; ktoggle publishes a new bundle within seconds of each start and end.
+            </p>
+          </>
+        )}
+      </div>
 
       <Checkbox label="Rule enabled" checked={enabled} onChange={setEnabled} />
 

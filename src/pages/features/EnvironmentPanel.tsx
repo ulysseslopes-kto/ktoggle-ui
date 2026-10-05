@@ -1,13 +1,14 @@
 import { clsx } from 'clsx'
-import { ArrowDown, ArrowUp, FlaskConical, Pencil, Percent, Plus, Target, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, CalendarClock, FlaskConical, Pencil, Percent, Plus, Target, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useSavedGroups } from '@/api/hooks'
-import type { EnvironmentSettings, ExperimentRule, Json, Rule, ValueType } from '@/api/types'
+import type { EnvironmentSettings, ExperimentRule, Json, Rule, RuleSchedule, ValueType } from '@/api/types'
 import { Button } from '@/components/ui/Button'
 import { Badge, EmptyState, ValueChip } from '@/components/ui/Display'
 import { Toggle } from '@/components/ui/Toggle'
 import { describeCondition } from './conditions'
 import { RuleDialog } from './RuleDialog'
+import { formatInstant, scheduleState } from './schedule'
 
 /**
  * Rules of one environment, as published or as proposed by the selected draft. Every edit is sent to a draft
@@ -140,6 +141,7 @@ export function RuleSummary({ rule, groupName }: { rule: Rule; groupName: (key: 
           </span>
         ))}
       </p>
+      {rule.schedule && <ScheduleSummary schedule={rule.schedule} />}
       {rule.type === 'experiment' ? (
         <ExperimentSummary rule={rule} />
       ) : (
@@ -155,6 +157,37 @@ export function RuleSummary({ rule, groupName }: { rule: Rule; groupName: (key: 
         </p>
       )}
     </>
+  )
+}
+
+const SCHEDULE_BADGE = {
+  upcoming: { tone: 'yellow', label: 'Scheduled' },
+  live: { tone: 'green', label: 'Live' },
+  ended: { tone: 'neutral', label: 'Ended' },
+} as const
+
+/** "Scheduled · from Oct 6, 2026, 10:00 AM until Oct 7, 2026, 10:00 AM". */
+function ScheduleSummary({ schedule }: { schedule: RuleSchedule }) {
+  const state = scheduleState(schedule)
+  if (!state) return null
+  const badge = SCHEDULE_BADGE[state]
+  return (
+    <p className="flex flex-wrap items-center gap-2 text-sm">
+      <CalendarClock className="size-4 text-kto-red" />
+      <Badge tone={badge.tone}>{badge.label}</Badge>
+      {schedule.startsAt && (
+        <>
+          <span className="text-muted">{state === 'upcoming' ? 'starts' : 'started'}</span>
+          <span className="font-mono text-xs text-white">{formatInstant(schedule.startsAt)}</span>
+        </>
+      )}
+      {schedule.endsAt && (
+        <>
+          <span className="text-muted">{state === 'ended' ? 'ended' : 'ends'}</span>
+          <span className="font-mono text-xs text-white">{formatInstant(schedule.endsAt)}</span>
+        </>
+      )}
+    </p>
   )
 }
 

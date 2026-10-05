@@ -222,7 +222,7 @@ export const useSaveReviewSettings = () =>
 
 export const useSimulate = () =>
   useMutation({
-    mutationFn: (body: { featureKey: string; environmentKey: string; attributes: Json; proposed?: EnvironmentSettings }) =>
+    mutationFn: (body: { featureKey: string; environmentKey: string; attributes: Json; proposed?: EnvironmentSettings; at?: string }) =>
       api<EvaluationResult>(`${V1}/simulate`, { method: 'POST', body }),
   })
 

@@ -4,8 +4,9 @@ import { useSimulate } from '@/api/hooks'
 import type { EnvironmentSettings, Environment, Json } from '@/api/types'
 import { Button } from '@/components/ui/Button'
 import { Badge, Card, ErrorBanner, ValueChip } from '@/components/ui/Display'
-import { Field, Select, Textarea } from '@/components/ui/Form'
+import { Field, Input, Select, Textarea } from '@/components/ui/Form'
 import { ExperimentAssignmentView } from './ExperimentAssignmentView'
+import { fromLocalInput } from './schedule'
 
 /** "Test feature": evaluates the flag with the official GrowthBook SDK — live, or as the selected draft would be. */
 export function TestPanel({ featureKey, environments, proposed }: {
@@ -17,6 +18,7 @@ export function TestPanel({ featureKey, environments, proposed }: {
   const [environmentKey, setEnvironmentKey] = useState(environments[0]?.key ?? '')
   const [attributes, setAttributes] = useState('{\n  "id": "user-123",\n  "country": "BR"\n}')
   const [parseError, setParseError] = useState(false)
+  const [at, setAt] = useState('')
   const simulate = useSimulate()
   const draft = proposed ? (proposed[environmentKey] ?? { enabled: false, rules: [] }) : null
 
@@ -29,7 +31,7 @@ export function TestPanel({ featureKey, environments, proposed }: {
       setParseError(true)
       return
     }
-    simulate.mutate({ featureKey, environmentKey, attributes: parsed, proposed: draft ?? undefined })
+    simulate.mutate({ featureKey, environmentKey, attributes: parsed, proposed: draft ?? undefined, at: fromLocalInput(at) ?? undefined })
   }
 
   const result = simulate.data
@@ -47,6 +49,9 @@ export function TestPanel({ featureKey, environments, proposed }: {
           </Field>
           <Field label="User attributes (JSON)" error={parseError ? 'Invalid JSON' : null}>
             <Textarea rows={6} value={attributes} onChange={(e) => setAttributes(e.target.value)} spellCheck={false} />
+          </Field>
+          <Field label="Evaluate at" hint="Leave empty for now. Useful to check scheduled rules.">
+            <Input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} />
           </Field>
           <div className="flex items-center gap-3">
             <Button onClick={run} loading={simulate.isPending}>Evaluate</Button>

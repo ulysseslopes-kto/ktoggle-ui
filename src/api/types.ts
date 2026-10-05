@@ -65,12 +65,20 @@ export interface SdkConnection {
   version: number
 }
 
+/** ISO instants; startsAt is inclusive, endsAt exclusive, either may be open. */
+export interface RuleSchedule {
+  startsAt?: string | null
+  endsAt?: string | null
+}
+
 interface RuleBase {
   id?: string
   description?: string | null
   enabled: boolean
   condition?: Json | null
   savedGroups: string[]
+  /** Optional live window; outside it the rule is left out of the SDK payload. */
+  schedule?: RuleSchedule | null
 }
 
 export interface ForceRule extends RuleBase {
