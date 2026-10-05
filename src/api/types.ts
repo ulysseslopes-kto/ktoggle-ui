@@ -64,6 +64,10 @@ export interface SdkConnection {
   environmentKey: string
   projectKeys: string[]
   pinnedBundleHash?: string | null
+  /** Serve encryptedFeatures (AES) instead of clear-text features; SDKs need the decryption key. */
+  encryptPayload: boolean
+  /** Identifies the current key without revealing it. */
+  keyFingerprint?: string | null
   createdAt: string
   updatedAt: string
   version: number

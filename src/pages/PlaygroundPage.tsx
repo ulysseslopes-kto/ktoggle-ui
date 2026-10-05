@@ -2,6 +2,7 @@ import { GrowthBook } from '@growthbook/growthbook'
 import { clsx } from 'clsx'
 import { Plug, PlugZap, RefreshCw } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { api } from '@/api/client'
 import { useSdkConnections } from '@/api/hooks'
 import { Button } from '@/components/ui/Button'
 import { Badge, Card, EmptyState, ErrorBanner, PageHeader, Table, ValueChip } from '@/components/ui/Display'
@@ -128,9 +129,21 @@ export function PlaygroundPage() {
     setRows([])
     setLog([])
     setStatus('connecting')
+    // encrypted connections: fetch the key like an app would have it configured (admins only)
+    let decryptionKey: string | undefined
+    if (connections.data?.find((c) => c.clientKey === clientKey)?.encryptPayload) {
+      try {
+        decryptionKey = (await api<{ decryptionKey: string }>(`/admin/v1/sdk-connections/${clientKey}/decryption-key`)).decryptionKey
+      } catch (e) {
+        setError(e)
+        setStatus('error')
+        return
+      }
+    }
     const gb = new GrowthBook({
       apiHost: config.apiUrl,
       clientKey,
+      decryptionKey,
       attributes,
       // what an app would send to its analytics (e.g. Mixpanel) for every experiment exposure
       trackingCallback: (experiment, result) => {
@@ -148,7 +161,7 @@ export function PlaygroundPage() {
       if (gbRef.current !== gb) return
       if (!response.success) throw response.error ?? new Error('Failed to load the features')
       setStatus('connected')
-      addLog(`Connected to ${clientKey}`)
+      addLog(`Connected to ${clientKey}${decryptionKey ? ' (encrypted payload, decrypted by the SDK)' : ''}`)
       refresh()
     } catch (e) {
       if (gbRef.current !== gb) return

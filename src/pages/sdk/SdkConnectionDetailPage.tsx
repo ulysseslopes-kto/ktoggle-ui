@@ -1,34 +1,45 @@
 import { clsx } from 'clsx'
-import { ArrowLeft, RotateCcw, ShieldAlert, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Lock, RotateCcw, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   useActivations,
   useBundle,
+  useDecryptionKey,
   useDeliveries,
   useRollback,
+  useRotateKey,
   useSdkConnection,
+  useSetEncryption,
   useUnpin,
   useVerifyActivations,
 } from '@/api/hooks'
-import type { BundleActivation } from '@/api/types'
+import type { BundleActivation, SdkConnection } from '@/api/types'
 import { useAuth } from '@/auth/auth'
 import { ReasonDialog } from '@/components/ReasonDialog'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { Badge, Card, Code, EmptyState, ErrorBanner, JsonBlock, PageHeader, Spinner, Table, formatDate } from '@/components/ui/Display'
+import { Toggle } from '@/components/ui/Toggle'
 import { config } from '@/config'
 
 type SnippetTab = 'java' | 'javascript' | 'react'
 
-function snippets(clientKey: string): Record<SnippetTab, string> {
+/** {@code encrypted}: the snippets pass the decryption key (shown as a placeholder; admins reveal it below). */
+function snippets(clientKey: string, encrypted: boolean): Record<SnippetTab, string> {
   const api = config.apiUrl
+  const key = encrypted ? "\n  decryptionKey: '<DECRYPTION_KEY>'," : ''
   return {
     java: `// growthbook-sdk-java
-String featuresJson = httpGet("${api}/api/features/${clientKey}");
+GBFeaturesRepository repository = GBFeaturesRepository.builder()
+    .apiHost("${api}")
+    .clientKey("${clientKey}")${encrypted ? '\n    .decryptionKey("<DECRYPTION_KEY>")' : ''}
+    .refreshStrategy(FeatureRefreshStrategy.SERVER_SENT_EVENTS)
+    .build();
+repository.initialize();
 
 GBContext context = GBContext.builder()
-    .featuresJson(featuresJson)
+    .featuresJson(repository.getFeaturesJson())
     .attributesJson("{\\"id\\":\\"user-123\\",\\"country\\":\\"BR\\"}")
     .build();
 
@@ -39,7 +50,7 @@ import { GrowthBook } from '@growthbook/growthbook'
 
 const gb = new GrowthBook({
   apiHost: '${api}',
-  clientKey: '${clientKey}',
+  clientKey: '${clientKey}',${key}
   attributes: { id: 'user-123', country: 'BR' },
 })
 await gb.init({ streaming: true })
@@ -52,7 +63,7 @@ import { GrowthBook, GrowthBookProvider, useFeatureIsOn } from '@growthbook/grow
 
 const gb = new GrowthBook({
   apiHost: '${api}',
-  clientKey: '${clientKey}',
+  clientKey: '${clientKey}',${key}
   attributes: { id: 'user-123', country: 'BR' },
 })
 gb.init({ streaming: true })
@@ -74,7 +85,7 @@ function Home() {
 
 const TAB_LABELS: Record<SnippetTab, string> = { java: 'Java', javascript: 'JavaScript', react: 'React' }
 
-function UsageCard({ clientKey }: { clientKey: string }) {
+function UsageCard({ clientKey, encrypted }: { clientKey: string; encrypted: boolean }) {
   const [tab, setTab] = useState<SnippetTab>('javascript')
   return (
     <Card title="How to use">
@@ -94,7 +105,80 @@ function UsageCard({ clientKey }: { clientKey: string }) {
           </button>
         ))}
       </div>
-      <pre className="overflow-auto rounded-md bg-ink p-3 font-mono text-xs leading-relaxed text-soft">{snippets(clientKey)[tab]}</pre>
+      <pre className="overflow-auto rounded-md bg-ink p-3 font-mono text-xs leading-relaxed text-soft">{snippets(clientKey, encrypted)[tab]}</pre>
+    </Card>
+  )
+}
+
+/**
+ * GrowthBook-style encrypted payloads: SDKs receive encryptedFeatures and decrypt them with the key. Bundles (the
+ * audit record) stay in clear text, so replay and verification are unaffected.
+ */
+function EncryptionCard({ connection }: { connection: SdkConnection }) {
+  const { can } = useAuth()
+  const admin = can('ktoggle-admin')
+  const setEncryption = useSetEncryption()
+  const rotate = useRotateKey()
+  const [revealed, setRevealed] = useState(false)
+  const [confirmRotate, setConfirmRotate] = useState(false)
+  const key = useDecryptionKey(connection.clientKey, revealed && admin && connection.keyFingerprint != null)
+
+  return (
+    <Card
+      title={<span className="flex items-center gap-2"><Lock className="size-4 text-kto-red" /> Payload encryption</span>}
+      actions={admin && (
+        <Toggle
+          checked={connection.encryptPayload}
+          label="Encrypt payload"
+          disabled={setEncryption.isPending}
+          onChange={(encryptPayload) => setEncryption.mutate({ ...connection, encryptPayload }, { onSuccess: () => setRevealed(false) })}
+        />
+      )}
+    >
+      <div className="space-y-3 text-sm">
+        <p className="text-soft">
+          {connection.encryptPayload
+            ? 'SDKs receive the features encrypted (AES) and decrypt them with the key below. Rules and values are not readable in browsers or app traffic.'
+            : 'SDKs receive the features in clear text. Turn encryption on to hide rules and values from browsers and app traffic.'}
+        </p>
+        {connection.keyFingerprint && (
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs text-muted">key <span className="font-mono text-soft">#{connection.keyFingerprint}</span></span>
+            {admin && !revealed && <Button size="sm" variant="secondary" onClick={() => setRevealed(true)}>Reveal key</Button>}
+            {admin && revealed && key.data && <Code value={key.data.decryptionKey} />}
+            {admin && <Button size="sm" variant="ghost" onClick={() => setConfirmRotate(true)}>Rotate key</Button>}
+          </div>
+        )}
+        <p className="text-xs text-muted">
+          The key ships inside your apps, so this hides details from casual inspection rather than from a determined attacker.
+          Bundles stay in clear text: verification and replay are unaffected.
+        </p>
+        <ErrorBanner error={setEncryption.error ?? rotate.error ?? key.error} />
+      </div>
+      {confirmRotate && (
+        <Dialog
+          open
+          onOpenChange={(open) => !open && setConfirmRotate(false)}
+          title="Rotate the decryption key?"
+          footer={
+            <>
+              <Button variant="ghost" onClick={() => setConfirmRotate(false)}>Cancel</Button>
+              <Button
+                variant="danger"
+                loading={rotate.isPending}
+                onClick={() => rotate.mutate(connection.clientKey, { onSuccess: () => { setConfirmRotate(false); setRevealed(false) } })}
+              >
+                Rotate key
+              </Button>
+            </>
+          }
+        >
+          <p className="text-sm text-soft">
+            SDKs using the current key stop reading new payloads until they are updated with the new one. Rotate when the key has
+            leaked, and roll the new key out to the apps right away.
+          </p>
+        </Dialog>
+      )}
     </Card>
   )
 }
@@ -344,11 +428,13 @@ export function SdkConnectionDetailPage() {
             <Badge tone="outline">{c.environmentKey}</Badge>
             {c.projectKeys.map((p) => <Badge key={p}>{p}</Badge>)}
             {c.pinnedBundleHash && <Badge tone="red">PINNED</Badge>}
+            {c.encryptPayload && <Badge tone="yellow"><Lock className="size-3" /> encrypted</Badge>}
           </span>
         }
       />
       <div className="space-y-6">
-        <UsageCard clientKey={c.clientKey} />
+        <UsageCard clientKey={c.clientKey} encrypted={c.encryptPayload} />
+        <EncryptionCard connection={c} />
         <div className="grid gap-6 lg:grid-cols-2">
           <ActiveBundleCard clientKey={c.clientKey} pinned={Boolean(c.pinnedBundleHash)} latest={latest} onOpenBundle={setOpenBundle} />
           <IntegrityCard clientKey={c.clientKey} />

@@ -410,3 +410,32 @@ export function useCanEditProject(projectKey?: string | null): boolean {
   if (!project || project.editorRoles.length + project.editorUsers.length === 0) return true
   return project.editorUsers.includes(user.username) || project.editorRoles.some((r) => user.hasRole(r))
 }
+
+// ---- Encrypted payloads ------------------------------------------------------------------------
+
+/** Admin only; fetched on demand ("Reveal key") so the key never sits in regular responses. */
+export const useDecryptionKey = (clientKey: string, enabled: boolean) =>
+  useQuery({
+    queryKey: ['sdk-connections', clientKey, 'decryption-key'],
+    queryFn: () => api<{ decryptionKey: string }>(`${V1}/sdk-connections/${clientKey}/decryption-key`),
+    enabled,
+    staleTime: 0,
+    gcTime: 0,
+  })
+
+export const useSetEncryption = () =>
+  useMutate(
+    (c: SdkConnection & { encryptPayload: boolean }) =>
+      api<SdkConnection>(`${V1}/sdk-connections/${c.clientKey}`, {
+        method: 'PUT',
+        body: { name: c.name, projectKeys: c.projectKeys, encryptPayload: c.encryptPayload, version: c.version },
+      }),
+    [['sdk-connections']],
+  )
+
+export const useRotateKey = () =>
+  useMutate(
+    (clientKey: string) => api<SdkConnection>(`${V1}/sdk-connections/${clientKey}/rotate-key`, { method: 'POST' }),
+    [['sdk-connections']],
+  )
+
