@@ -2,7 +2,7 @@ import { clsx } from 'clsx'
 import { CalendarClock, FlaskConical, Link2, Percent, Plus, Scale, Target, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useAttributes, useSavedGroups } from '@/api/hooks'
-import type { Json, Prerequisite, Rule, ValueType } from '@/api/types'
+import type { Json, Prerequisite, Rule, SavedGroup, ValueType } from '@/api/types'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { Checkbox, Field, Input, Select } from '@/components/ui/Form'
@@ -69,7 +69,7 @@ function RuleForm({ featureKey, projectKey, valueType, initial, onCancel, onSave
   const [description, setDescription] = useState(initial?.description ?? '')
   const [enabled, setEnabled] = useState(initial?.enabled ?? true)
   const [condition, setCondition] = useState<Json | null | undefined>(initial?.condition ?? null)
-  const [savedGroups, setSavedGroups] = useState<string[]>(initial?.savedGroups ?? [])
+  const [groupMatch, setGroupMatch] = useState<GroupMatches>(() => matchesOf(initial))
   const [value, setValue] = useState<Json | undefined>(initial && initial.type !== 'experiment' ? initial.value : on)
   const [coverage, setCoverage] = useState(initial && initial.type !== 'force' ? Math.round(initial.coverage * 100) : 50)
   const [chosenHash, setHashAttribute] = useState(initial && initial.type !== 'force' ? initial.hashAttribute : '')
@@ -127,7 +127,7 @@ function RuleForm({ featureKey, projectKey, valueType, initial, onCancel, onSave
       description: description || null,
       enabled,
       condition: condition ?? null,
-      savedGroups,
+      ...savedGroupLists(groupMatch),
       schedule: schedule?.startsAt || schedule?.endsAt ? schedule : null,
       prerequisites: gated ? prerequisites : [],
     }
@@ -193,24 +193,7 @@ function RuleForm({ featureKey, projectKey, valueType, initial, onCancel, onSave
         <ConditionEditor value={condition ?? null} onChange={setCondition} attributes={attributes} />
       </Field>
 
-      <Field label="Saved groups" hint="Users must belong to every selected group.">
-        {groups.length === 0 ? (
-          <span className="text-sm text-muted">No saved groups yet.</span>
-        ) : (
-          <div className="flex flex-wrap gap-x-5 gap-y-2">
-            {groups.map((group) => (
-              <Checkbox
-                key={group.key}
-                label={group.name}
-                checked={savedGroups.includes(group.key)}
-                onChange={(checked) =>
-                  setSavedGroups(checked ? [...savedGroups, group.key] : savedGroups.filter((g) => g !== group.key))
-                }
-              />
-            ))}
-          </div>
-        )}
-      </Field>
+      <SavedGroupsPicker groups={groups} value={groupMatch} onChange={setGroupMatch} />
 
       {type !== 'force' && (
         <div className="grid grid-cols-[2fr_1fr] gap-4">
@@ -359,6 +342,74 @@ function RuleForm({ featureKey, projectKey, valueType, initial, onCancel, onSave
         <Button variant="ghost" onClick={onCancel}>Cancel</Button>
         <Button onClick={save} disabled={!valid}>{initial ? 'Save rule' : 'Add rule'}</Button>
       </div>
+    </div>
+  )
+}
+
+type GroupMatch = 'all' | 'any' | 'none'
+type GroupMatches = Record<string, GroupMatch>
+
+const MATCH_LABEL: Record<GroupMatch | '', string> = {
+  '': 'Not used',
+  all: 'Must be in',
+  any: 'Any of (at least one)',
+  none: 'Must not be in',
+}
+
+function matchesOf(rule?: Rule): GroupMatches {
+  const matches: GroupMatches = {}
+  rule?.savedGroups.forEach((g) => (matches[g] = 'all'))
+  rule?.savedGroupsAny?.forEach((g) => (matches[g] = 'any'))
+  rule?.savedGroupsNone?.forEach((g) => (matches[g] = 'none'))
+  return matches
+}
+
+function savedGroupLists(matches: GroupMatches) {
+  const of = (match: GroupMatch) => Object.keys(matches).filter((g) => matches[g] === match)
+  return { savedGroups: of('all'), savedGroupsAny: of('any'), savedGroupsNone: of('none') }
+}
+
+/** GrowthBook-style saved group targeting: each group is required, one of an "any" set, or excluded. */
+function SavedGroupsPicker({ groups, value, onChange }: {
+  groups: SavedGroup[]
+  value: GroupMatches
+  onChange: (value: GroupMatches) => void
+}) {
+  const anyCount = Object.values(value).filter((m) => m === 'any').length
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="text-xs font-semibold uppercase tracking-wide text-soft">Saved groups</span>
+      {groups.length === 0 ? (
+        <span className="text-sm text-muted">No saved groups yet.</span>
+      ) : (
+        <div className="grid gap-2 sm:grid-cols-2">
+          {groups.map((group) => (
+            <div key={group.key} className="flex items-center justify-between gap-3 rounded-md border border-line bg-ink/40 px-3 py-2">
+              <span className="min-w-0 truncate text-sm">{group.name}</span>
+              <Select
+                className="w-auto"
+                aria-label={`Saved group ${group.name}`}
+                value={value[group.key] ?? ''}
+                onChange={(e) => {
+                  const next = { ...value }
+                  if (e.target.value) next[group.key] = e.target.value as GroupMatch
+                  else delete next[group.key]
+                  onChange(next)
+                }}
+              >
+                {(['', 'all', 'any', 'none'] as const).map((m) => (
+                  <option key={m} value={m}>{MATCH_LABEL[m]}</option>
+                ))}
+              </Select>
+            </div>
+          ))}
+        </div>
+      )}
+      <span className="text-xs text-muted">
+        {anyCount === 1
+          ? 'With a single "any of" group it works like "must be in".'
+          : 'Users must be in every required group, in at least one "any of" group, and in no excluded group.'}
+      </span>
     </div>
   )
 }

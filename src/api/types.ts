@@ -76,7 +76,12 @@ interface RuleBase {
   description?: string | null
   enabled: boolean
   condition?: Json | null
+  /** Saved groups the user must be in, all of them. */
   savedGroups: string[]
+  /** Saved groups the user must be in at least one of. */
+  savedGroupsAny?: string[]
+  /** Saved groups the user must not be in. */
+  savedGroupsNone?: string[]
   /** Features this rule depends on; when unmet the rule is skipped. */
   prerequisites?: Prerequisite[]
   /** Optional live window; outside it the rule is left out of the SDK payload. */

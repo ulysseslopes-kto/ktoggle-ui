@@ -136,11 +136,16 @@ export function RuleSummary({ rule, groupName }: { rule: Rule; groupName: (key: 
     <>
       <p className="text-sm">
         <span className="text-muted">IF </span>
-        {(rule.condition || rule.savedGroups.length === 0) && describeCondition(rule.condition)}
-        {rule.savedGroups.map((g, i) => (
-          <span key={g}>
-            <span className="text-muted">{i > 0 || rule.condition ? ' AND in group ' : 'in group '}</span>
-            <Badge tone="outline">{groupName(g)}</Badge>
+        {(rule.condition || !hasGroups(rule)) && describeCondition(rule.condition)}
+        {groupClauses(rule).map((clause, i) => (
+          <span key={clause.label + clause.groups.join()}>
+            <span className="text-muted">{i > 0 || rule.condition ? ` AND ${clause.label} ` : `${clause.label} `}</span>
+            {clause.groups.map((g, j) => (
+              <span key={g}>
+                {j > 0 && <span className="text-muted">{clause.joiner}</span>}
+                <Badge tone="outline">{groupName(g)}</Badge>
+              </span>
+            ))}
           </span>
         ))}
       </p>
@@ -204,6 +209,21 @@ function ScheduleSummary({ schedule }: { schedule: RuleSchedule }) {
       )}
     </p>
   )
+}
+
+function hasGroups(rule: Rule) {
+  return rule.savedGroups.length + (rule.savedGroupsAny?.length ?? 0) + (rule.savedGroupsNone?.length ?? 0) > 0
+}
+
+/** Required groups one by one, then "in any of A or B", then "not in C, D". */
+function groupClauses(rule: Rule) {
+  const clauses = rule.savedGroups.map((g) => ({ label: 'in group', groups: [g], joiner: '' }))
+  const any = rule.savedGroupsAny ?? []
+  if (any.length === 1) clauses.push({ label: 'in group', groups: any, joiner: '' })
+  if (any.length > 1) clauses.push({ label: 'in any of', groups: any, joiner: ' or ' })
+  const none = rule.savedGroupsNone ?? []
+  if (none.length > 0) clauses.push({ label: 'not in', groups: none, joiner: ' or ' })
+  return clauses
 }
 
 export function RuleTypeBadge({ rule }: { rule: Rule }) {
