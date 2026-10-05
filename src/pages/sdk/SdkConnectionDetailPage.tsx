@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { ArrowLeft, Lock, RotateCcw, ShieldAlert, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Lock, RotateCcw, Server, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
@@ -10,7 +10,7 @@ import {
   useRollback,
   useRotateKey,
   useSdkConnection,
-  useSetEncryption,
+  useSetDelivery,
   useUnpin,
   useVerifyActivations,
 } from '@/api/hooks'
@@ -26,9 +26,9 @@ import { config } from '@/config'
 type SnippetTab = 'java' | 'javascript' | 'react'
 
 /** {@code encrypted}: the snippets pass the decryption key (shown as a placeholder; admins reveal it below). */
-function snippets(clientKey: string, encrypted: boolean): Record<SnippetTab, string> {
+function snippets(clientKey: string, encrypted: boolean, remoteEval: boolean): Record<SnippetTab, string> {
   const api = config.apiUrl
-  const key = encrypted ? "\n  decryptionKey: '<DECRYPTION_KEY>'," : ''
+  const key = remoteEval ? '\n  remoteEval: true, // values are computed by ktoggle; rules never reach the browser' : encrypted ? "\n  decryptionKey: '<DECRYPTION_KEY>'," : ''
   return {
     java: `// growthbook-sdk-java
 GBFeaturesRepository repository = GBFeaturesRepository.builder()
@@ -85,7 +85,7 @@ function Home() {
 
 const TAB_LABELS: Record<SnippetTab, string> = { java: 'Java', javascript: 'JavaScript', react: 'React' }
 
-function UsageCard({ clientKey, encrypted }: { clientKey: string; encrypted: boolean }) {
+function UsageCard({ clientKey, encrypted, remoteEval }: { clientKey: string; encrypted: boolean; remoteEval: boolean }) {
   const [tab, setTab] = useState<SnippetTab>('javascript')
   return (
     <Card title="How to use">
@@ -105,7 +105,46 @@ function UsageCard({ clientKey, encrypted }: { clientKey: string; encrypted: boo
           </button>
         ))}
       </div>
-      <pre className="overflow-auto rounded-md bg-ink p-3 font-mono text-xs leading-relaxed text-soft">{snippets(clientKey, encrypted)[tab]}</pre>
+      <pre className="overflow-auto rounded-md bg-ink p-3 font-mono text-xs leading-relaxed text-soft">{snippets(clientKey, encrypted, remoteEval)[tab]}</pre>
+    </Card>
+  )
+}
+
+/**
+ * GrowthBook remote evaluation: the SDK posts the user's attributes and gets evaluated values only. Best for browsers
+ * and apps where even encrypted rules should not ship. Experiments keep firing the tracking callback.
+ */
+function RemoteEvalCard({ connection }: { connection: SdkConnection }) {
+  const { can } = useAuth()
+  const admin = can('ktoggle-admin')
+  const update = useSetDelivery()
+  return (
+    <Card
+      title={<span className="flex items-center gap-2"><Server className="size-4 text-kto-red" /> Remote evaluation</span>}
+      actions={admin && (
+        <Toggle
+          checked={connection.remoteEval}
+          label="Remote evaluation"
+          disabled={update.isPending || connection.encryptPayload}
+          onChange={(remoteEval) => update.mutate({ ...connection, remoteEval })}
+        />
+      )}
+    >
+      <div className="space-y-3 text-sm">
+        <p className="text-soft">
+          {connection.remoteEval
+            ? 'SDKs send the user attributes to ktoggle (POST /api/eval) and receive only the values. Rules, conditions and rollout plans never leave the server.'
+            : 'SDKs download the rules and evaluate locally (fastest, works offline). Turn this on for browsers and apps where no rule should be visible.'}
+        </p>
+        {connection.encryptPayload && (
+          <p className="text-xs text-kto-yellow">Turn payload encryption off to use remote evaluation.</p>
+        )}
+        <p className="text-xs text-muted">
+          Values are evaluated with the official SDK against the active, verified bundle, so every answer is tied to a bundle hash
+          and stays replayable. Backend services usually keep local evaluation.
+        </p>
+        <ErrorBanner error={update.error} />
+      </div>
     </Card>
   )
 }
@@ -117,7 +156,7 @@ function UsageCard({ clientKey, encrypted }: { clientKey: string; encrypted: boo
 function EncryptionCard({ connection }: { connection: SdkConnection }) {
   const { can } = useAuth()
   const admin = can('ktoggle-admin')
-  const setEncryption = useSetEncryption()
+  const setEncryption = useSetDelivery()
   const rotate = useRotateKey()
   const [revealed, setRevealed] = useState(false)
   const [confirmRotate, setConfirmRotate] = useState(false)
@@ -130,7 +169,7 @@ function EncryptionCard({ connection }: { connection: SdkConnection }) {
         <Toggle
           checked={connection.encryptPayload}
           label="Encrypt payload"
-          disabled={setEncryption.isPending}
+          disabled={setEncryption.isPending || connection.remoteEval}
           onChange={(encryptPayload) => setEncryption.mutate({ ...connection, encryptPayload }, { onSuccess: () => setRevealed(false) })}
         />
       )}
@@ -141,6 +180,9 @@ function EncryptionCard({ connection }: { connection: SdkConnection }) {
             ? 'SDKs receive the features encrypted (AES) and decrypt them with the key below. Rules and values are not readable in browsers or app traffic.'
             : 'SDKs receive the features in clear text. Turn encryption on to hide rules and values from browsers and app traffic.'}
         </p>
+        {connection.remoteEval && (
+          <p className="text-xs text-kto-yellow">Not needed with remote evaluation: the rules never reach the SDK.</p>
+        )}
         {connection.keyFingerprint && (
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-xs text-muted">key <span className="font-mono text-soft">#{connection.keyFingerprint}</span></span>
@@ -429,12 +471,16 @@ export function SdkConnectionDetailPage() {
             {c.projectKeys.map((p) => <Badge key={p}>{p}</Badge>)}
             {c.pinnedBundleHash && <Badge tone="red">PINNED</Badge>}
             {c.encryptPayload && <Badge tone="yellow"><Lock className="size-3" /> encrypted</Badge>}
+            {c.remoteEval && <Badge tone="yellow"><Server className="size-3" /> remote evaluation</Badge>}
           </span>
         }
       />
       <div className="space-y-6">
-        <UsageCard clientKey={c.clientKey} encrypted={c.encryptPayload} />
-        <EncryptionCard connection={c} />
+        <UsageCard clientKey={c.clientKey} encrypted={c.encryptPayload} remoteEval={c.remoteEval} />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <RemoteEvalCard connection={c} />
+          <EncryptionCard connection={c} />
+        </div>
         <div className="grid gap-6 lg:grid-cols-2">
           <ActiveBundleCard clientKey={c.clientKey} pinned={Boolean(c.pinnedBundleHash)} latest={latest} onOpenBundle={setOpenBundle} />
           <IntegrityCard clientKey={c.clientKey} />

@@ -68,6 +68,8 @@ export interface SdkConnection {
   encryptPayload: boolean
   /** Identifies the current key without revealing it. */
   keyFingerprint?: string | null
+  /** SDKs post their attributes to /api/eval and get values; rules never leave the server. */
+  remoteEval: boolean
   createdAt: string
   updatedAt: string
   version: number

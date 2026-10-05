@@ -423,12 +423,13 @@ export const useDecryptionKey = (clientKey: string, enabled: boolean) =>
     gcTime: 0,
   })
 
-export const useSetEncryption = () =>
+/** Delivery options of a connection: payload encryption or remote evaluation (mutually exclusive). */
+export const useSetDelivery = () =>
   useMutate(
-    (c: SdkConnection & { encryptPayload: boolean }) =>
+    (c: SdkConnection) =>
       api<SdkConnection>(`${V1}/sdk-connections/${c.clientKey}`, {
         method: 'PUT',
-        body: { name: c.name, projectKeys: c.projectKeys, encryptPayload: c.encryptPayload, version: c.version },
+        body: { name: c.name, projectKeys: c.projectKeys, encryptPayload: c.encryptPayload, remoteEval: c.remoteEval, version: c.version },
       }),
     [['sdk-connections']],
   )
