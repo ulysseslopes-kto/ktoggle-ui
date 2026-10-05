@@ -5,6 +5,7 @@ import type { EnvironmentSettings, Environment, Json } from '@/api/types'
 import { Button } from '@/components/ui/Button'
 import { Badge, Card, ErrorBanner, ValueChip } from '@/components/ui/Display'
 import { Field, Select, Textarea } from '@/components/ui/Form'
+import { ExperimentAssignmentView } from './ExperimentAssignmentView'
 
 /** "Test feature": evaluates the flag with the official GrowthBook SDK — live, or as the selected draft would be. */
 export function TestPanel({ featureKey, environments, proposed }: {
@@ -63,6 +64,7 @@ export function TestPanel({ featureKey, environments, proposed }: {
                   source <span className="font-mono text-soft">{result.source}</span>
                   {result.ruleId && <> · rule <span className="font-mono text-soft">{result.ruleId}</span></>}
                 </p>
+                {result.experiment && <ExperimentAssignmentView assignment={result.experiment} />}
               </div>
               {result.trace.length > 0 && (
                 <ol className="space-y-1.5">
@@ -77,7 +79,13 @@ export function TestPanel({ featureKey, environments, proposed }: {
                         <Badge>{t.type}</Badge>
                       </span>
                       <span className="text-xs text-muted">
-                        {t.selected ? 'applied' : t.conditionMatched ? 'condition met, outside the rollout' : 'condition not met'}
+                        {t.selected
+                          ? 'applied'
+                          : !t.conditionMatched
+                            ? 'condition not met'
+                            : t.type === 'experiment'
+                              ? 'condition met, not in the experiment'
+                              : 'condition met, outside the rollout'}
                       </span>
                     </li>
                   ))}

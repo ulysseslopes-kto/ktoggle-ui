@@ -1,8 +1,8 @@
 import { clsx } from 'clsx'
-import { ArrowDown, ArrowUp, Pencil, Percent, Plus, Target, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, FlaskConical, Pencil, Percent, Plus, Target, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useSavedGroups } from '@/api/hooks'
-import type { EnvironmentSettings, Json, Rule, ValueType } from '@/api/types'
+import type { EnvironmentSettings, ExperimentRule, Json, Rule, ValueType } from '@/api/types'
 import { Button } from '@/components/ui/Button'
 import { Badge, EmptyState, ValueChip } from '@/components/ui/Display'
 import { Toggle } from '@/components/ui/Toggle'
@@ -13,7 +13,8 @@ import { RuleDialog } from './RuleDialog'
  * Rules of one environment, as published or as proposed by the selected draft. Every edit is sent to a draft
  * ({@code onChange}); nothing here changes what SDKs receive until the draft is published.
  */
-export function EnvironmentPanel({ environmentKey, settings, valueType, defaultValue, editable, busy, onChange }: {
+export function EnvironmentPanel({ featureKey, environmentKey, settings, valueType, defaultValue, editable, busy, onChange }: {
+  featureKey: string
   environmentKey: string
   settings: EnvironmentSettings
   valueType: ValueType
@@ -77,11 +78,7 @@ export function EnvironmentPanel({ environmentKey, settings, valueType, defaultV
                 </span>
                 <div className="min-w-0 flex-1 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    {rule.type === 'force' ? (
-                      <Badge tone="red"><Target className="size-3" /> Force value</Badge>
-                    ) : (
-                      <Badge tone="red"><Percent className="size-3" /> Rollout</Badge>
-                    )}
+                    <RuleTypeBadge rule={rule} />
                     {!rule.enabled && <Badge>disabled</Badge>}
                     {rule.description && <span className="text-sm font-semibold">{rule.description}</span>}
                     {rule.id && <span className="font-mono text-[0.6875rem] text-kto-grey">{rule.id}</span>}
@@ -117,6 +114,7 @@ export function EnvironmentPanel({ environmentKey, settings, valueType, defaultV
       <RuleDialog
         open={editing !== null}
         onOpenChange={(open) => !open && setEditing(null)}
+        featureKey={featureKey}
         valueType={valueType}
         initial={editing?.index != null ? rules[editing.index] : undefined}
         onSave={(rule) => {
@@ -142,17 +140,59 @@ export function RuleSummary({ rule, groupName }: { rule: Rule; groupName: (key: 
           </span>
         ))}
       </p>
-      <p className="flex flex-wrap items-center gap-2 text-sm">
-        {rule.type === 'rollout' && (
-          <>
-            <span className="text-muted">for</span>
-            <span className="font-mono font-bold text-kto-yellow">{Math.round(rule.coverage * 100)}%</span>
-            <span className="text-muted">of users (hashed by {rule.hashAttribute})</span>
-          </>
-        )}
-        <span className="text-muted">serve</span> <ValueChip value={rule.value} />
-      </p>
+      {rule.type === 'experiment' ? (
+        <ExperimentSummary rule={rule} />
+      ) : (
+        <p className="flex flex-wrap items-center gap-2 text-sm">
+          {rule.type === 'rollout' && (
+            <>
+              <span className="text-muted">for</span>
+              <span className="font-mono font-bold text-kto-yellow">{Math.round(rule.coverage * 100)}%</span>
+              <span className="text-muted">of users (hashed by {rule.hashAttribute})</span>
+            </>
+          )}
+          <span className="text-muted">serve</span> <ValueChip value={rule.value} />
+        </p>
+      )}
     </>
+  )
+}
+
+export function RuleTypeBadge({ rule }: { rule: Rule }) {
+  if (rule.type === 'force') return <Badge tone="red"><Target className="size-3" /> Force value</Badge>
+  if (rule.type === 'rollout') return <Badge tone="red"><Percent className="size-3" /> Rollout</Badge>
+  return <Badge tone="red"><FlaskConical className="size-3" /> Experiment</Badge>
+}
+
+const VARIATION_COLORS = ['bg-neutral-300', 'bg-kto-red', 'bg-kto-yellow', 'bg-sky-500', 'bg-kto-green', 'bg-fuchsia-500']
+
+/** "run experiment checkout-button for 100% of users", a weight bar and the variations with their values. */
+function ExperimentSummary({ rule }: { rule: ExperimentRule }) {
+  return (
+    <div className="space-y-2 text-sm">
+      <p className="flex flex-wrap items-center gap-2">
+        <span className="text-muted">run experiment</span>
+        <span className="font-mono text-xs text-white">{rule.trackingKey}</span>
+        <span className="text-muted">for</span>
+        <span className="font-mono font-bold text-kto-yellow">{Math.round(rule.coverage * 100)}%</span>
+        <span className="text-muted">of users (hashed by {rule.hashAttribute})</span>
+      </p>
+      <div className="flex h-1.5 max-w-md overflow-hidden rounded-full bg-surface-2" aria-hidden>
+        {rule.variations.map((v, i) => (
+          <span key={v.key} style={{ width: `${v.weight * 100}%` }} className={VARIATION_COLORS[i % VARIATION_COLORS.length]} />
+        ))}
+      </div>
+      <ul className="flex flex-wrap gap-x-4 gap-y-1">
+        {rule.variations.map((v, i) => (
+          <li key={v.key} className="flex items-center gap-1.5">
+            <span className={clsx('size-2 rounded-full', VARIATION_COLORS[i % VARIATION_COLORS.length])} />
+            <span className="text-soft">{v.name || `#${v.key}`}</span>
+            <span className="font-mono text-xs text-kto-yellow">{Number((v.weight * 100).toFixed(2))}%</span>
+            <ValueChip value={v.value} />
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 

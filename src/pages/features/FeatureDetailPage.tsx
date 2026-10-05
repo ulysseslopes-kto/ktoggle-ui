@@ -168,6 +168,7 @@ export function FeatureDetailPage() {
           current && (
             <EnvironmentPanel
               key={`${current}-${draft?.id ?? 'live'}`}
+              featureKey={f.key}
               environmentKey={current}
               settings={content.environments[current] ?? { enabled: false, rules: [] }}
               valueType={f.valueType}

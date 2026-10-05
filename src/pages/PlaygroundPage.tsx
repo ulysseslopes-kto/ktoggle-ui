@@ -128,7 +128,15 @@ export function PlaygroundPage() {
     setRows([])
     setLog([])
     setStatus('connecting')
-    const gb = new GrowthBook({ apiHost: config.apiUrl, clientKey, attributes })
+    const gb = new GrowthBook({
+      apiHost: config.apiUrl,
+      clientKey,
+      attributes,
+      // what an app would send to its analytics (e.g. Mixpanel) for every experiment exposure
+      trackingCallback: (experiment, result) => {
+        if (gbRef.current === gb) addLog(`Exposure tracked: ${experiment.key} → variation #${result.key}`)
+      },
+    })
     gbRef.current = gb
     gb.subscribe(() => {
       if (gbRef.current !== gb) return
@@ -238,7 +246,7 @@ export function PlaygroundPage() {
               <ul className="max-h-72 space-y-1 overflow-auto font-mono text-xs">
                 {log.map((entry, i) => (
                   <li key={`${entry.at.getTime()}-${i}`} className="flex gap-3">
-                    <span className="shrink-0 text-muted">{entry.at.toLocaleTimeString('pt-BR')}</span>
+                    <span className="shrink-0 text-muted">{entry.at.toLocaleTimeString('en-US')}</span>
                     <span className="text-soft">{entry.message}</span>
                   </li>
                 ))}

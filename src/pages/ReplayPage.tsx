@@ -30,6 +30,17 @@ function ResultCard({ replay }: { replay: ReplayResult }) {
     ['Client key', <Code key="c" value={replay.clientKey} />],
     ['Attributes digest', <Code key="d" value={replay.attributesDigest} short />],
   ]
+  if (result.experiment) {
+    const e = result.experiment
+    rows.push([
+      'Experiment',
+      <span key="x" className="text-sm">
+        <span className="font-mono text-xs">{e.trackingKey}</span>{' '}
+        {e.inExperiment ? <>· variation <span className="font-mono text-kto-yellow">#{e.variationKey}</span></> : '· not in the experiment'}
+        {e.bucket != null && <span className="text-muted"> · bucket {e.bucket.toFixed(4)}</span>}
+      </span>,
+    ])
+  }
   if (replay.activation) {
     rows.push([
       'Activation',

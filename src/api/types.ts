@@ -71,20 +71,43 @@ interface RuleBase {
   enabled: boolean
   condition?: Json | null
   savedGroups: string[]
-  value: Json
 }
 
 export interface ForceRule extends RuleBase {
   type: 'force'
+  value: Json
 }
 
 export interface RolloutRule extends RuleBase {
   type: 'rollout'
+  value: Json
   coverage: number
   hashAttribute: string
 }
 
-export type Rule = ForceRule | RolloutRule
+export interface Variation {
+  key: string
+  name?: string | null
+  value: Json
+  /** 0..1; the weights of an experiment add up to 1 */
+  weight: number
+}
+
+/** A/B test: the SDK splits users between variations and reports each exposure to its tracking callback. */
+export interface ExperimentRule extends RuleBase {
+  type: 'experiment'
+  trackingKey: string
+  hashAttribute: string
+  /** share of matching users included in the experiment, 0..1 */
+  coverage: number
+  variations: Variation[]
+  hashVersion?: number
+  seed?: string | null
+  /** read-only, sent by the server: the first variation's value */
+  value?: Json
+}
+
+export type Rule = ForceRule | RolloutRule | ExperimentRule
 
 export interface EnvironmentSettings {
   enabled: boolean
@@ -223,6 +246,16 @@ export interface EvaluationResult {
   ruleId?: string | null
   evaluator: string
   trace: RuleTrace[]
+  experiment?: ExperimentAssignment | null
+}
+
+/** What the SDK's tracking callback reports for this user. */
+export interface ExperimentAssignment {
+  trackingKey: string
+  variationKey: string
+  variationIndex: number
+  inExperiment: boolean
+  bucket?: number | null
 }
 
 export interface ReplayResult {
