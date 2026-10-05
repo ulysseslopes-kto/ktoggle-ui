@@ -1,0 +1,53 @@
+@import 'tailwindcss';
+
+/* KTO brand (kto-brand-guidelines): black backdrop, KTO red as the brand colour, white text.
+   Green only for positive actions / "on" states, yellow only for numbers. */
+@theme {
+  --color-kto-red: #da0000;
+  --color-kto-red-hover: #f01414;
+  --color-kto-red-deep: #900000;
+  --color-kto-green: #00dd70;
+  --color-kto-yellow: #fad749;
+  --color-kto-grey: #505050;
+
+  --color-ink: #000000;
+  --color-surface: #1e1e1e;
+  --color-surface-2: #323232;
+  --color-surface-3: #3c3c3c;
+  --color-line: #323232;
+  --color-muted: #9b9b9b;
+  --color-soft: #d9d9d9;
+
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  /* NN Swinton Heavy Italic is the brand headline face (commercial); Archivo 900 italic is the free fallback. */
+  --font-display: 'NN Swinton', 'Archivo', 'Inter', sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'JetBrains Mono', Consolas, monospace;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-ink text-white font-sans antialiased;
+  }
+
+  ::selection {
+    background: var(--color-kto-red);
+    color: #fff;
+  }
+
+  * {
+    scrollbar-color: var(--color-surface-3) transparent;
+  }
+}
+
+@layer components {
+  /* H1: always uppercase heavy italic (brand rule). */
+  .headline {
+    @apply font-display font-black italic uppercase tracking-tight;
+  }
+}
