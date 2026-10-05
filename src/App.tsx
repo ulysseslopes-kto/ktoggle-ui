@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { AuthProvider } from './auth/auth'
 import { AppLayout } from './components/layout/AppLayout'
+import { ApiTokensPage } from './pages/ApiTokensPage'
 import { AttributesPage } from './pages/AttributesPage'
 import { AuditPage } from './pages/AuditPage'
 import { DecisionsPage } from './pages/DecisionsPage'
@@ -31,6 +32,7 @@ const router = createBrowserRouter([
       { path: 'drafts', element: <ReviewsPage /> },
       { path: 'saved-groups', element: <SavedGroupsPage /> },
       { path: 'settings', element: <SettingsPage /> },
+      { path: 'api-tokens', element: <ApiTokensPage /> },
       { path: 'attributes', element: <AttributesPage /> },
       { path: 'environments', element: <EnvironmentsPage /> },
       { path: 'projects', element: <ProjectsPage /> },

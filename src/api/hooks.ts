@@ -1,11 +1,14 @@
 import { useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { api } from './client'
 import type {
+  ApiToken,
+  ApiTokenRole,
   Attribute,
   AuditEntry,
   BundleActivation,
   Bundle,
   ChainVerification,
+  CreatedApiToken,
   DecisionEvent,
   DraftStatus,
   DraftView,
@@ -338,3 +341,17 @@ export const useVerifyDecisionAttributes = () =>
         body: attributes,
       }),
   })
+
+// ---- API tokens --------------------------------------------------------------------------------
+
+export const useApiTokens = () => useQuery({ queryKey: ['api-tokens'], queryFn: () => api<ApiToken[]>(`${V1}/api-tokens`) })
+
+export const useCreateApiToken = () =>
+  useMutate(
+    (body: { name: string; role: ApiTokenRole; expiresAt?: string | null }) =>
+      api<CreatedApiToken>(`${V1}/api-tokens`, { method: 'POST', body }),
+    [['api-tokens']],
+  )
+
+export const useRevokeApiToken = () =>
+  useMutate((id: string) => api<ApiToken>(`${V1}/api-tokens/${id}`, { method: 'DELETE' }), [['api-tokens']])

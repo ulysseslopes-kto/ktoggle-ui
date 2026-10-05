@@ -12,6 +12,7 @@ import {
   Settings,
   ShieldCheck,
   Tags,
+  KeyRound,
   Users,
 } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
@@ -30,6 +31,7 @@ const NAV = [
     { to: '/projects', label: 'Projects', icon: Boxes },
     { to: '/sdk-connections', label: 'SDK connections', icon: PlugZap },
     { to: '/settings', label: 'Settings', icon: Settings },
+    { to: '/api-tokens', label: 'API tokens', icon: KeyRound, adminOnly: true },
   ] },
   { section: 'Auditing', items: [
     { to: '/audit', label: 'Audit log', icon: ScrollText },
@@ -57,7 +59,7 @@ export function AppLayout() {
           {NAV.map((group) => (
             <div key={group.section} className="mb-5">
               <p className="px-2 pb-1.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-kto-grey">{group.section}</p>
-              {group.items.map(({ to, label, icon: Icon }) => (
+              {group.items.filter((item) => !('adminOnly' in item) || user.can('ktoggle-admin')).map(({ to, label, icon: Icon }) => (
                 <NavLink
                   key={to}
                   to={to}

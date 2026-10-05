@@ -381,3 +381,25 @@ export interface ReviewSettings {
   updatedBy: string
   version: number
 }
+
+export type ApiTokenRole = 'VIEWER' | 'EDITOR'
+
+/** Credential for automation; the secret itself is only returned once, at creation. */
+export interface ApiToken {
+  id: string
+  name: string
+  /** first characters of the secret, to recognize it */
+  prefix: string
+  role: ApiTokenRole
+  createdBy: string
+  createdAt: string
+  expiresAt?: string | null
+  lastUsedAt?: string | null
+  revokedBy?: string | null
+  revokedAt?: string | null
+}
+
+export interface CreatedApiToken {
+  token: ApiToken
+  secret: string
+}
