@@ -403,3 +403,47 @@ export interface CreatedApiToken {
   token: ApiToken
   secret: string
 }
+
+export type WebhookFormat = 'GENERIC' | 'SLACK'
+
+/** Outgoing notification endpoint; its signing secret is only returned at creation. */
+export interface Webhook {
+  id: string
+  name: string
+  url: string
+  format: WebhookFormat
+  /** event codes, e.g. "draft.published" */
+  events: string[]
+  enabled: boolean
+  createdBy: string
+  createdAt: string
+  updatedBy: string
+  updatedAt: string
+  version: number
+}
+
+export interface CreatedWebhook {
+  webhook: Webhook
+  secret: string
+}
+
+export interface WebhookEventInfo {
+  code: string
+  label: string
+}
+
+export type WebhookDeliveryStatus = 'PENDING' | 'SENDING' | 'RETRY' | 'DELIVERED' | 'FAILED'
+
+export interface WebhookDelivery {
+  id: string
+  webhookId: string
+  event: string
+  payload: Json
+  status: WebhookDeliveryStatus
+  attempts: number
+  nextAttemptAt: string
+  lastStatusCode?: number | null
+  lastError?: string | null
+  createdAt: string
+  deliveredAt?: string | null
+}

@@ -15,6 +15,7 @@ import { ReplayPage } from './pages/ReplayPage'
 import { ReviewsPage } from './pages/ReviewsPage'
 import { SavedGroupsPage } from './pages/SavedGroupsPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { WebhooksPage } from './pages/WebhooksPage'
 import { SdkConnectionDetailPage } from './pages/sdk/SdkConnectionDetailPage'
 import { SdkConnectionsPage } from './pages/sdk/SdkConnectionsPage'
 
@@ -33,6 +34,7 @@ const router = createBrowserRouter([
       { path: 'saved-groups', element: <SavedGroupsPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'api-tokens', element: <ApiTokensPage /> },
+      { path: 'webhooks', element: <WebhooksPage /> },
       { path: 'attributes', element: <AttributesPage /> },
       { path: 'environments', element: <EnvironmentsPage /> },
       { path: 'projects', element: <ProjectsPage /> },

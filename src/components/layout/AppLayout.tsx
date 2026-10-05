@@ -14,6 +14,7 @@ import {
   Tags,
   KeyRound,
   Users,
+  Webhook,
 } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useDraftsByStatus } from '@/api/hooks'
@@ -32,6 +33,7 @@ const NAV = [
     { to: '/sdk-connections', label: 'SDK connections', icon: PlugZap },
     { to: '/settings', label: 'Settings', icon: Settings },
     { to: '/api-tokens', label: 'API tokens', icon: KeyRound, adminOnly: true },
+    { to: '/webhooks', label: 'Webhooks', icon: Webhook, adminOnly: true },
   ] },
   { section: 'Auditing', items: [
     { to: '/audit', label: 'Audit log', icon: ScrollText },

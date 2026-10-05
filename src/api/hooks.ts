@@ -9,6 +9,7 @@ import type {
   Bundle,
   ChainVerification,
   CreatedApiToken,
+  CreatedWebhook,
   DecisionEvent,
   DraftStatus,
   DraftView,
@@ -30,6 +31,10 @@ import type {
   SdkConnection,
   ValueType,
   VerifiedBundle,
+  Webhook,
+  WebhookDelivery,
+  WebhookEventInfo,
+  WebhookFormat,
 } from './types'
 
 const V1 = '/admin/v1'
@@ -355,3 +360,38 @@ export const useCreateApiToken = () =>
 
 export const useRevokeApiToken = () =>
   useMutate((id: string) => api<ApiToken>(`${V1}/api-tokens/${id}`, { method: 'DELETE' }), [['api-tokens']])
+
+// ---- Webhooks ----------------------------------------------------------------------------------
+
+export interface WebhookInput {
+  name: string
+  url: string
+  format: WebhookFormat
+  events: string[]
+  enabled?: boolean
+  version?: number
+}
+
+export const useWebhooks = () => useQuery({ queryKey: ['webhooks'], queryFn: () => api<Webhook[]>(`${V1}/webhooks`) })
+
+export const useWebhookEvents = () =>
+  useQuery({ queryKey: ['webhooks', 'events'], queryFn: () => api<WebhookEventInfo[]>(`${V1}/webhooks/events`), staleTime: Infinity })
+
+export const useWebhookDeliveries = (id: string, live: boolean) =>
+  useQuery({
+    queryKey: ['webhooks', id, 'deliveries'],
+    queryFn: () => api<WebhookDelivery[]>(`${V1}/webhooks/${id}/deliveries`, { query: { limit: 20 } }),
+    refetchInterval: live ? 3_000 : false,
+  })
+
+export const useCreateWebhook = () =>
+  useMutate((body: WebhookInput) => api<CreatedWebhook>(`${V1}/webhooks`, { method: 'POST', body }), [['webhooks']])
+
+export const useUpdateWebhook = () =>
+  useMutate(({ id, ...body }: WebhookInput & { id: string }) => api<Webhook>(`${V1}/webhooks/${id}`, { method: 'PUT', body }), [['webhooks']])
+
+export const useDeleteWebhook = () =>
+  useMutate((id: string) => api<void>(`${V1}/webhooks/${id}`, { method: 'DELETE' }), [['webhooks']])
+
+export const useTestWebhook = () =>
+  useMutate((id: string) => api<void>(`${V1}/webhooks/${id}/test`, { method: 'POST' }), [['webhooks']])
