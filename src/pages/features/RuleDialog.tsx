@@ -1,13 +1,14 @@
 import { clsx } from 'clsx'
-import { CalendarClock, FlaskConical, Percent, Plus, Scale, Target, Trash2 } from 'lucide-react'
+import { CalendarClock, FlaskConical, Link2, Percent, Plus, Scale, Target, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useAttributes, useSavedGroups } from '@/api/hooks'
-import type { Json, Rule, ValueType } from '@/api/types'
+import type { Json, Prerequisite, Rule, ValueType } from '@/api/types'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { Checkbox, Field, Input, Select } from '@/components/ui/Form'
 import { ConditionEditor } from './ConditionEditor'
 import { equalWeights, nextVariationKey, TRACKING_KEY, weightsAddUp } from './experiments'
+import { PrerequisiteEditor } from './PrerequisiteEditor'
 import { fromLocalInput, toLocalInput } from './schedule'
 import { defaultFor, ValueEditor } from './ValueEditor'
 
@@ -18,10 +19,11 @@ const TYPES = [
 ] as const
 
 /** Create/edit a rule (force, percentage rollout or experiment), mirroring GrowthBook's "Add rule" modal. */
-export function RuleDialog({ open, onOpenChange, featureKey, valueType, initial, onSave }: {
+export function RuleDialog({ open, onOpenChange, featureKey, projectKey, valueType, initial, onSave }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   featureKey: string
+  projectKey?: string | null
   valueType: ValueType
   initial?: Rule
   onSave: (rule: Rule) => void
@@ -35,7 +37,7 @@ export function RuleDialog({ open, onOpenChange, featureKey, valueType, initial,
       description="Rules are evaluated top to bottom; the first one that applies sets the value."
     >
       {open && (
-        <RuleForm featureKey={featureKey} valueType={valueType} initial={initial} onCancel={() => onOpenChange(false)} onSave={onSave} />
+        <RuleForm featureKey={featureKey} projectKey={projectKey} valueType={valueType} initial={initial} onCancel={() => onOpenChange(false)} onSave={onSave} />
       )}
     </Dialog>
   )
@@ -48,8 +50,9 @@ interface VariationDraft {
   weight: number
 }
 
-function RuleForm({ featureKey, valueType, initial, onCancel, onSave }: {
+function RuleForm({ featureKey, projectKey, valueType, initial, onCancel, onSave }: {
   featureKey: string
+  projectKey?: string | null
   valueType: ValueType
   initial?: Rule
   onCancel: () => void
@@ -82,6 +85,8 @@ function RuleForm({ featureKey, valueType, initial, onCancel, onSave }: {
         ],
   )
 
+  const [prerequisites, setPrerequisites] = useState<Prerequisite[]>(initial?.prerequisites ?? [])
+  const [gated, setGated] = useState(prerequisites.length > 0)
   const [startsAt, setStartsAt] = useState(toLocalInput(initial?.schedule?.startsAt))
   const [endsAt, setEndsAt] = useState(toLocalInput(initial?.schedule?.endsAt))
   const [scheduled, setScheduled] = useState(Boolean(startsAt || endsAt))
@@ -124,6 +129,7 @@ function RuleForm({ featureKey, valueType, initial, onCancel, onSave }: {
       condition: condition ?? null,
       savedGroups,
       schedule: schedule?.startsAt || schedule?.endsAt ? schedule : null,
+      prerequisites: gated ? prerequisites : [],
     }
     if (type === 'force') {
       onSave({ ...base, type, value: value! })
@@ -308,6 +314,20 @@ function RuleForm({ featureKey, valueType, initial, onCancel, onSave }: {
           <ValueEditor type={valueType} value={value} onChange={setValue} />
         </Field>
       )}
+
+      <div className="space-y-3 rounded-lg border border-line bg-ink/40 p-3">
+        <Checkbox
+          label={<span className="flex items-center gap-1.5"><Link2 className="size-4 text-kto-red" /> Require other features (prerequisites)</span>}
+          checked={gated}
+          onChange={setGated}
+        />
+        {gated && (
+          <>
+            <PrerequisiteEditor featureKey={featureKey} projectKey={projectKey} value={prerequisites} onChange={setPrerequisites} />
+            <p className="text-xs text-muted">When a prerequisite fails for a user, this rule is skipped and evaluation continues.</p>
+          </>
+        )}
+      </div>
 
       <div className="space-y-3 rounded-lg border border-line bg-ink/40 p-3">
         <Checkbox

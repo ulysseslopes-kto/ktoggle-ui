@@ -69,6 +69,9 @@ export function TestPanel({ featureKey, environments, proposed }: {
                   source <span className="font-mono text-soft">{result.source}</span>
                   {result.ruleId && <> · rule <span className="font-mono text-soft">{result.ruleId}</span></>}
                 </p>
+                {result.source === 'prerequisite' && (
+                  <p className="mt-2 text-xs text-kto-yellow">A prerequisite feature did not pass for this user, so the feature is off.</p>
+                )}
                 {result.experiment && <ExperimentAssignmentView assignment={result.experiment} />}
               </div>
               {result.trace.length > 0 && (
@@ -84,7 +87,9 @@ export function TestPanel({ featureKey, environments, proposed }: {
                         <Badge>{t.type}</Badge>
                       </span>
                       <span className="text-xs text-muted">
-                        {t.selected
+                        {t.type === 'prerequisite'
+                          ? t.conditionMatched ? 'prerequisites met' : 'prerequisite not met: feature off'
+                          : t.selected
                           ? 'applied'
                           : !t.conditionMatched
                             ? 'condition not met'

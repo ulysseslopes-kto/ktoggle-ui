@@ -77,6 +77,8 @@ interface RuleBase {
   enabled: boolean
   condition?: Json | null
   savedGroups: string[]
+  /** Features this rule depends on; when unmet the rule is skipped. */
+  prerequisites?: Prerequisite[]
   /** Optional live window; outside it the rule is left out of the SDK payload. */
   schedule?: RuleSchedule | null
 }
@@ -131,6 +133,7 @@ export interface Feature {
   owner?: string | null
   tags: string[]
   archived: boolean
+  prerequisites: Prerequisite[]
   environments: Record<string, EnvironmentSettings>
   revision: number
   createdAt: string
@@ -149,7 +152,21 @@ export interface FeatureSnapshot {
   owner?: string | null
   tags: string[]
   archived: boolean
+  prerequisites?: Prerequisite[]
   environments: Record<string, EnvironmentSettings>
+}
+
+/** Depends on another feature: {@code condition} is evaluated against {@code {"value": <parent value>}}. */
+export interface Prerequisite {
+  featureKey: string
+  condition: Json
+}
+
+/** A feature that depends on this one, at feature level and/or in rules of some environments. */
+export interface Dependent {
+  featureKey: string
+  featureLevel: boolean
+  ruleEnvironments: string[]
 }
 
 export interface FeatureRevision {

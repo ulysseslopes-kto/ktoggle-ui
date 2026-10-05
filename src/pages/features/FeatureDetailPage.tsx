@@ -19,6 +19,7 @@ import { DraftReviewDialog } from './DraftReviewDialog'
 import { STATUS_LABEL, STATUS_TONE } from './draftLabels'
 import { EnvironmentPanel } from './EnvironmentPanel'
 import { MetadataDialog } from './MetadataDialog'
+import { PrerequisitesCard } from './PrerequisitesCard'
 import { RevisionsCard } from './RevisionsCard'
 import { TestPanel } from './TestPanel'
 
@@ -140,6 +141,8 @@ export function FeatureDetailPage() {
         </dl>
       </Card>
 
+      <PrerequisitesCard content={content} editable={editable} ensureDraft={ensureDraft} />
+
       <section>
         <h2 className="mb-3 text-lg font-bold">Rules by environment</h2>
         <div className="mb-4 flex gap-1 border-b border-line">
@@ -169,6 +172,7 @@ export function FeatureDetailPage() {
             <EnvironmentPanel
               key={`${current}-${draft?.id ?? 'live'}`}
               featureKey={f.key}
+              projectKey={content.projectKey}
               environmentKey={current}
               settings={content.environments[current] ?? { enabled: false, rules: [] }}
               valueType={f.valueType}
@@ -261,6 +265,7 @@ function snapshotOf(f: Feature): FeatureSnapshot {
     owner: f.owner,
     tags: f.tags,
     archived: f.archived,
+    prerequisites: f.prerequisites ?? [],
     environments: f.environments,
   }
 }

@@ -10,6 +10,7 @@ import type {
   DraftStatus,
   DraftView,
   DeliveryLogEntry,
+  Dependent,
   Environment,
   EnvironmentSettings,
   EvaluationResult,
@@ -17,6 +18,7 @@ import type {
   FeatureDraft,
   FeatureRevision,
   Json,
+  Prerequisite,
   Project,
   ReplayResult,
   ReviewSettings,
@@ -101,6 +103,9 @@ export const useFeatures = (filter: FeatureFilter) =>
 export const useFeature = (key: string) =>
   useQuery({ queryKey: ['features', key], queryFn: () => api<Feature>(`${V1}/features/${encodeURIComponent(key)}`) })
 
+export const useFeatureDependents = (key: string) =>
+  useQuery({ queryKey: ['features', key, 'dependents'], queryFn: () => api<Dependent[]>(`${V1}/features/${encodeURIComponent(key)}/dependents`) })
+
 export const useFeatureRevisions = (key: string) =>
   useQuery({
     queryKey: ['features', key, 'revisions'],
@@ -182,6 +187,13 @@ export const useUpdateDraftMetadata = () =>
   useMutate(
     ({ id, ...body }: DraftMetadata & { id: string }) =>
       api<FeatureDraft>(`${V1}/drafts/${id}/metadata`, { method: 'PUT', body }),
+    draftKeys,
+  )
+
+export const useUpdateDraftPrerequisites = () =>
+  useMutate(
+    ({ id, prerequisites, version }: { id: string; prerequisites: Prerequisite[]; version: number }) =>
+      api<FeatureDraft>(`${V1}/drafts/${id}/prerequisites`, { method: 'PUT', body: { prerequisites, version } }),
     draftKeys,
   )
 

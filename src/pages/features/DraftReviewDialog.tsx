@@ -2,7 +2,7 @@ import { clsx } from 'clsx'
 import { AlertTriangle, CheckCircle2, GitMerge, MessageSquare, ShieldAlert, XCircle } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { useDraft, useDraftAction, usePublishDraft, useRebaseDraft, useSavedGroups } from '@/api/hooks'
-import type { DraftView, EnvironmentSettings, Json, SectionChange } from '@/api/types'
+import type { DraftView, EnvironmentSettings, Json, Prerequisite, SectionChange } from '@/api/types'
 import { ReasonDialog } from '@/components/ReasonDialog'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
@@ -10,6 +10,7 @@ import { Badge, ErrorBanner, formatDate, JsonBlock, Spinner, ValueChip } from '@
 import { Textarea } from '@/components/ui/Form'
 import { EVENT_LABEL, sectionLabel, STATUS_LABEL, STATUS_TONE } from './draftLabels'
 import { RuleSummary } from './EnvironmentPanel'
+import { describePrerequisite } from './prerequisites'
 
 /**
  * "Review & publish", as in GrowthBook: side-by-side diff of what is live vs what would be published, conflicts
@@ -174,14 +175,14 @@ function ChangeDiff({ change, conflict }: { change: SectionChange; conflict: boo
     <div className={clsx('rounded-lg border', conflict ? 'border-kto-red' : 'border-line')}>
       <div className="flex items-center gap-2 border-b border-line px-4 py-2 text-sm font-semibold">
         {sectionLabel(change.section)}
-        {conflict && <Badge tone="red">conflito</Badge>}
+        {conflict && <Badge tone="red">conflict</Badge>}
       </div>
       <div className="grid divide-x divide-line md:grid-cols-2">
         <DiffSide title="Live" tone="muted">
-          {isEnvironment ? <EnvironmentView settings={change.live as unknown as EnvironmentSettings | null} /> : <FieldView value={change.live} />}
+          {isEnvironment ? <EnvironmentView settings={change.live as unknown as EnvironmentSettings | null} /> : <FieldView section={change.section} value={change.live} />}
         </DiffSide>
         <DiffSide title="After publishing" tone="red">
-          {isEnvironment ? <EnvironmentView settings={change.proposed as unknown as EnvironmentSettings | null} /> : <FieldView value={change.proposed} />}
+          {isEnvironment ? <EnvironmentView settings={change.proposed as unknown as EnvironmentSettings | null} /> : <FieldView section={change.section} value={change.proposed} />}
         </DiffSide>
       </div>
     </div>
@@ -197,7 +198,16 @@ function DiffSide({ title, tone, children }: { title: string; tone: 'muted' | 'r
   )
 }
 
-function FieldView({ value }: { value: Json }) {
+function FieldView({ section, value }: { section: string; value: Json }) {
+  if (section === 'prerequisites') {
+    const list = (value ?? []) as unknown as Prerequisite[]
+    if (list.length === 0) return <span className="text-sm text-muted">none</span>
+    return (
+      <ul className="space-y-1 text-sm">
+        {list.map((p) => <li key={p.featureKey} className="font-mono text-xs">{describePrerequisite(p)}</li>)}
+      </ul>
+    )
+  }
   if (Array.isArray(value)) return <span className="text-sm">{value.length ? value.join(', ') : '—'}</span>
   if (value !== null && typeof value === 'object') return <JsonBlock value={value} />
   return <ValueChip value={value} />

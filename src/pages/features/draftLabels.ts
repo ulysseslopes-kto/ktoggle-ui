@@ -39,6 +39,7 @@ const FIELD_LABEL: Record<string, string> = {
   owner: 'Owner',
   tags: 'Tags',
   archived: 'Archived',
+  prerequisites: 'Prerequisites',
 }
 
 export function sectionLabel(section: string): string {

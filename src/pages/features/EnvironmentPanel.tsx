@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { ArrowDown, ArrowUp, CalendarClock, FlaskConical, Pencil, Percent, Plus, Target, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, CalendarClock, FlaskConical, Link2, Pencil, Percent, Plus, Target, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useSavedGroups } from '@/api/hooks'
 import type { EnvironmentSettings, ExperimentRule, Json, Rule, RuleSchedule, ValueType } from '@/api/types'
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge, EmptyState, ValueChip } from '@/components/ui/Display'
 import { Toggle } from '@/components/ui/Toggle'
 import { describeCondition } from './conditions'
+import { describePrerequisite } from './prerequisites'
 import { RuleDialog } from './RuleDialog'
 import { formatInstant, scheduleState } from './schedule'
 
@@ -14,8 +15,9 @@ import { formatInstant, scheduleState } from './schedule'
  * Rules of one environment, as published or as proposed by the selected draft. Every edit is sent to a draft
  * ({@code onChange}); nothing here changes what SDKs receive until the draft is published.
  */
-export function EnvironmentPanel({ featureKey, environmentKey, settings, valueType, defaultValue, editable, busy, onChange }: {
+export function EnvironmentPanel({ featureKey, projectKey, environmentKey, settings, valueType, defaultValue, editable, busy, onChange }: {
   featureKey: string
+  projectKey?: string | null
   environmentKey: string
   settings: EnvironmentSettings
   valueType: ValueType
@@ -116,6 +118,7 @@ export function EnvironmentPanel({ featureKey, environmentKey, settings, valueTy
         open={editing !== null}
         onOpenChange={(open) => !open && setEditing(null)}
         featureKey={featureKey}
+        projectKey={projectKey}
         valueType={valueType}
         initial={editing?.index != null ? rules[editing.index] : undefined}
         onSave={(rule) => {
@@ -141,6 +144,18 @@ export function RuleSummary({ rule, groupName }: { rule: Rule; groupName: (key: 
           </span>
         ))}
       </p>
+      {(rule.prerequisites?.length ?? 0) > 0 && (
+        <p className="flex flex-wrap items-center gap-2 text-sm">
+          <Link2 className="size-4 text-kto-red" />
+          <span className="text-muted">requires</span>
+          {rule.prerequisites!.map((p, i) => (
+            <span key={p.featureKey} className="font-mono text-xs text-white">
+              {i > 0 && <span className="font-sans text-muted">and </span>}
+              {describePrerequisite(p)}
+            </span>
+          ))}
+        </p>
+      )}
       {rule.schedule && <ScheduleSummary schedule={rule.schedule} />}
       {rule.type === 'experiment' ? (
         <ExperimentSummary rule={rule} />
