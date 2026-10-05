@@ -27,8 +27,8 @@ export function ValueEditor({ type, value, onChange, id }: {
   if (type === 'BOOLEAN') {
     return (
       <Select id={id} value={String(value ?? false)} onChange={(e) => onChange(e.target.value === 'true')}>
-        <option value="true">true (ligado)</option>
-        <option value="false">false (desligado)</option>
+        <option value="true">true (on)</option>
+        <option value="false">false (off)</option>
       </Select>
     )
   }
@@ -36,14 +36,14 @@ export function ValueEditor({ type, value, onChange, id }: {
     return (
       <div>
         <Textarea id={id} rows={5} value={text} onChange={(e) => update(e.target.value)} spellCheck={false} />
-        {invalid && <p className="mt-1 text-xs text-kto-red">JSON inválido</p>}
+        {invalid && <p className="mt-1 text-xs text-kto-red">Invalid JSON</p>}
       </div>
     )
   }
   return (
     <div>
       <Input id={id} value={text} inputMode={type === 'NUMBER' ? 'decimal' : 'text'} onChange={(e) => update(e.target.value)} />
-      {invalid && <p className="mt-1 text-xs text-kto-red">Número inválido</p>}
+      {invalid && <p className="mt-1 text-xs text-kto-red">Invalid number</p>}
     </div>
   )
 }

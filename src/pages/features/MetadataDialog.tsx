@@ -15,8 +15,8 @@ export function MetadataDialog({ open, onOpenChange, content, ensureDraft }: {
   ensureDraft: () => Promise<FeatureDraft>
 }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} title="Editar feature"
-      description="As alterações vão para o draft e só entram no ar depois de publicadas.">
+    <Dialog open={open} onOpenChange={onOpenChange} title="Edit feature"
+      description="Changes go to the draft and only go live once it is published.">
       {open && <MetadataForm content={content} ensureDraft={ensureDraft} onDone={() => onOpenChange(false)} />}
     </Dialog>
   )
@@ -54,37 +54,37 @@ function MetadataForm({ content, ensureDraft, onDone }: {
 
   return (
     <div className="space-y-4">
-      <Field label="Valor padrão" hint="Servido quando nenhuma regra se aplica.">
+      <Field label="Default value" hint="Served when no rule applies.">
         <ValueEditor type={content.valueType} value={defaultValue} onChange={setDefaultValue} />
       </Field>
-      <Field label="Projeto">
+      <Field label="Project">
         <Select value={projectKey} onChange={(e) => setProjectKey(e.target.value)}>
-          <option value="">Nenhum</option>
+          <option value="">None</option>
           {projects.map((p) => (
             <option key={p.key} value={p.key}>{p.name}</option>
           ))}
         </Select>
       </Field>
-      <Field label="Descrição">
+      <Field label="Description">
         <Input value={description} onChange={(e) => setDescription(e.target.value)} />
       </Field>
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Responsável">
+        <Field label="Owner">
           <Input value={owner} onChange={(e) => setOwner(e.target.value)} />
         </Field>
-        <Field label="Tags" hint="Separadas por vírgula">
+        <Field label="Tags" hint="Comma-separated">
           <Input value={tags} onChange={(e) => setTags(e.target.value)} />
         </Field>
       </div>
       <Checkbox
-        label="Arquivada (deixa de ser enviada aos SDKs; nada é apagado)"
+        label="Archived (no longer sent to SDKs; nothing is deleted)"
         checked={archived}
         onChange={setArchived}
       />
       <ErrorBanner error={update.error} />
       <div className="flex justify-end gap-2 border-t border-line pt-4">
-        <Button variant="ghost" onClick={onDone}>Cancelar</Button>
-        <Button onClick={submit} loading={update.isPending} disabled={defaultValue === undefined}>Salvar no draft</Button>
+        <Button variant="ghost" onClick={onDone}>Cancel</Button>
+        <Button onClick={submit} loading={update.isPending} disabled={defaultValue === undefined}>Save to draft</Button>
       </div>
     </div>
   )

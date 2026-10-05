@@ -22,8 +22,8 @@ export function RuleDialog({ open, onOpenChange, valueType, initial, onSave }: {
       open={open}
       onOpenChange={onOpenChange}
       wide
-      title={initial ? 'Editar regra' : 'Nova regra'}
-      description="Regras são avaliadas de cima para baixo; a primeira que se aplicar define o valor."
+      title={initial ? 'Edit rule' : 'New rule'}
+      description="Rules are evaluated top to bottom; the first one that applies sets the value."
     >
       {open && <RuleForm valueType={valueType} initial={initial} onCancel={() => onOpenChange(false)} onSave={onSave} />}
     </Dialog>
@@ -74,28 +74,28 @@ function RuleForm({ valueType, initial, onCancel, onSave }: {
           >
             {option === 'force' ? <Target className="mt-0.5 size-5 text-kto-red" /> : <Percent className="mt-0.5 size-5 text-kto-red" />}
             <span>
-              <span className="block text-sm font-semibold">{option === 'force' ? 'Forçar valor' : 'Rollout percentual'}</span>
+              <span className="block text-sm font-semibold">{option === 'force' ? 'Force value' : 'Percentage rollout'}</span>
               <span className="block text-xs text-muted">
                 {option === 'force'
-                  ? 'Usuários que atendem à condição recebem o valor.'
-                  : 'Uma fração estável dos usuários (por hash) recebe o valor.'}
+                  ? 'Users matching the condition get the value.'
+                  : 'A stable share of users (by hash) gets the value.'}
               </span>
             </span>
           </button>
         ))}
       </div>
 
-      <Field label="Descrição">
-        <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ex.: Beta para o Brasil" />
+      <Field label="Description">
+        <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g. Beta for Brazil" />
       </Field>
 
-      <Field label="Condição de targeting">
+      <Field label="Targeting condition">
         <ConditionEditor value={condition ?? null} onChange={setCondition} attributes={attributes} />
       </Field>
 
-      <Field label="Saved groups" hint="O usuário precisa pertencer a todos os grupos marcados.">
+      <Field label="Saved groups" hint="Users must belong to every selected group.">
         {groups.length === 0 ? (
-          <span className="text-sm text-muted">Nenhum saved group cadastrado.</span>
+          <span className="text-sm text-muted">No saved groups yet.</span>
         ) : (
           <div className="flex flex-wrap gap-x-5 gap-y-2">
             {groups.map((group) => (
@@ -114,7 +114,7 @@ function RuleForm({ valueType, initial, onCancel, onSave }: {
 
       {type === 'rollout' && (
         <div className="grid grid-cols-[2fr_1fr] gap-4">
-          <Field label="Percentual de usuários">
+          <Field label="Percentage of users">
             <div className="flex items-center gap-3">
               <input
                 type="range"
@@ -123,12 +123,12 @@ function RuleForm({ valueType, initial, onCancel, onSave }: {
                 value={coverage}
                 onChange={(e) => setCoverage(Number(e.target.value))}
                 className="flex-1 accent-kto-red"
-                aria-label="Percentual"
+                aria-label="Percentage"
               />
               <span className="w-14 text-right font-mono text-lg font-bold text-kto-yellow">{coverage}%</span>
             </div>
           </Field>
-          <Field label="Atributo de hash" hint="Garante que o mesmo usuário fique sempre no mesmo grupo.">
+          <Field label="Hash attribute" hint="Keeps each user consistently in the same bucket.">
             <Select value={hashAttribute} onChange={(e) => setHashAttribute(e.target.value)}>
               {hashable.map((a) => (
                 <option key={a.key} value={a.key}>{a.key}</option>
@@ -138,15 +138,15 @@ function RuleForm({ valueType, initial, onCancel, onSave }: {
         </div>
       )}
 
-      <Field label="Valor servido">
+      <Field label="Value to serve">
         <ValueEditor type={valueType} value={value} onChange={setValue} />
       </Field>
 
-      <Checkbox label="Regra ativa" checked={enabled} onChange={setEnabled} />
+      <Checkbox label="Rule enabled" checked={enabled} onChange={setEnabled} />
 
       <div className="flex justify-end gap-2 border-t border-line pt-4">
-        <Button variant="ghost" onClick={onCancel}>Cancelar</Button>
-        <Button onClick={save} disabled={!valid}>{initial ? 'Salvar regra' : 'Adicionar regra'}</Button>
+        <Button variant="ghost" onClick={onCancel}>Cancel</Button>
+        <Button onClick={save} disabled={!valid}>{initial ? 'Save rule' : 'Add rule'}</Button>
       </div>
     </div>
   )

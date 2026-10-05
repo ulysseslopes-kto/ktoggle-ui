@@ -26,7 +26,7 @@ describe('conditions', () => {
 
   it('returns null for an empty builder (everyone)', () => {
     expect(buildCondition([], ATTRIBUTES)).toBeNull()
-    expect(describeCondition(null)).toBe('Todos os usuários')
+    expect(describeCondition(null)).toBe('All users')
   })
 
   it('round-trips simple conditions', () => {

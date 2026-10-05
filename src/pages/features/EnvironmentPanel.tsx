@@ -43,27 +43,27 @@ export function EnvironmentPanel({ environmentKey, settings, valueType, defaultV
           <Toggle
             checked={settings.enabled}
             disabled={!editable || busy}
-            label={`Ativar em ${environmentKey}`}
+            label={`Enable in ${environmentKey}`}
             onChange={(enabled) => onChange({ enabled, rules })}
           />
           <div>
-            <p className="text-sm font-semibold">{settings.enabled ? `Ligada em ${environmentKey}` : `Desligada em ${environmentKey}`}</p>
+            <p className="text-sm font-semibold">{settings.enabled ? `On in ${environmentKey}` : `Off in ${environmentKey}`}</p>
             <p className="text-xs text-muted">
               {settings.enabled
-                ? 'Os SDKs deste ambiente recebem as regras abaixo.'
-                : 'Os SDKs deste ambiente avaliam a feature como nula (desligada).'}
+                ? 'SDKs in this environment receive the rules below.'
+                : 'SDKs in this environment evaluate the feature as null (off).'}
             </p>
           </div>
         </div>
         {editable && (
           <Button size="sm" variant="secondary" disabled={busy} onClick={() => setEditing({ index: null })}>
-            <Plus className="size-3.5" /> Adicionar regra
+            <Plus className="size-3.5" /> Add rule
           </Button>
         )}
       </div>
 
       {rules.length === 0 ? (
-        <EmptyState title="Nenhuma regra">Todos os usuários recebem o valor padrão.</EmptyState>
+        <EmptyState title="No rules">All users get the default value.</EmptyState>
       ) : (
         <ol className="space-y-3">
           {rules.map((rule, index) => (
@@ -78,11 +78,11 @@ export function EnvironmentPanel({ environmentKey, settings, valueType, defaultV
                 <div className="min-w-0 flex-1 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     {rule.type === 'force' ? (
-                      <Badge tone="red"><Target className="size-3" /> Forçar valor</Badge>
+                      <Badge tone="red"><Target className="size-3" /> Force value</Badge>
                     ) : (
                       <Badge tone="red"><Percent className="size-3" /> Rollout</Badge>
                     )}
-                    {!rule.enabled && <Badge>desativada</Badge>}
+                    {!rule.enabled && <Badge>disabled</Badge>}
                     {rule.description && <span className="text-sm font-semibold">{rule.description}</span>}
                     {rule.id && <span className="font-mono text-[0.6875rem] text-kto-grey">{rule.id}</span>}
                   </div>
@@ -94,13 +94,13 @@ export function EnvironmentPanel({ environmentKey, settings, valueType, defaultV
                       size="sm"
                       checked={rule.enabled}
                       disabled={busy}
-                      label="Regra ativa"
+                      label="Rule enabled"
                       onChange={(enabled) => setRules(rules.map((r, i) => (i === index ? { ...r, enabled } : r)))}
                     />
-                    <IconButton label="Subir" disabled={busy || index === 0} onClick={() => move(index, -1)} icon={ArrowUp} />
-                    <IconButton label="Descer" disabled={busy || index === rules.length - 1} onClick={() => move(index, 1)} icon={ArrowDown} />
-                    <IconButton label="Editar" disabled={busy} onClick={() => setEditing({ index })} icon={Pencil} />
-                    <IconButton label="Remover" danger disabled={busy} onClick={() => setRules(rules.filter((_, i) => i !== index))} icon={Trash2} />
+                    <IconButton label="Move up" disabled={busy || index === 0} onClick={() => move(index, -1)} icon={ArrowUp} />
+                    <IconButton label="Move down" disabled={busy || index === rules.length - 1} onClick={() => move(index, 1)} icon={ArrowDown} />
+                    <IconButton label="Edit" disabled={busy} onClick={() => setEditing({ index })} icon={Pencil} />
+                    <IconButton label="Remove" danger disabled={busy} onClick={() => setRules(rules.filter((_, i) => i !== index))} icon={Trash2} />
                   </div>
                 )}
               </div>
@@ -110,7 +110,7 @@ export function EnvironmentPanel({ environmentKey, settings, valueType, defaultV
       )}
 
       <div className="rounded-lg border border-dashed border-surface-3 px-4 py-3 text-sm">
-        <span className="text-muted">Caso nenhuma regra se aplique, servir o valor padrão </span>
+        <span className="text-muted">If no rule applies, serve the default value </span>
         <ValueChip value={defaultValue} />
       </div>
 
@@ -128,16 +128,16 @@ export function EnvironmentPanel({ environmentKey, settings, valueType, defaultV
   )
 }
 
-/** "SE country é igual a BR E no grupo VIPs · para 25% … servir true". */
+/** "IF country equals BR AND in group VIPs · for 25% … serve true". */
 export function RuleSummary({ rule, groupName }: { rule: Rule; groupName: (key: string) => string }) {
   return (
     <>
       <p className="text-sm">
-        <span className="text-muted">SE </span>
+        <span className="text-muted">IF </span>
         {(rule.condition || rule.savedGroups.length === 0) && describeCondition(rule.condition)}
         {rule.savedGroups.map((g, i) => (
           <span key={g}>
-            <span className="text-muted">{i > 0 || rule.condition ? ' E no grupo ' : 'no grupo '}</span>
+            <span className="text-muted">{i > 0 || rule.condition ? ' AND in group ' : 'in group '}</span>
             <Badge tone="outline">{groupName(g)}</Badge>
           </span>
         ))}
@@ -145,12 +145,12 @@ export function RuleSummary({ rule, groupName }: { rule: Rule; groupName: (key: 
       <p className="flex flex-wrap items-center gap-2 text-sm">
         {rule.type === 'rollout' && (
           <>
-            <span className="text-muted">para</span>
+            <span className="text-muted">for</span>
             <span className="font-mono font-bold text-kto-yellow">{Math.round(rule.coverage * 100)}%</span>
-            <span className="text-muted">dos usuários (hash por {rule.hashAttribute})</span>
+            <span className="text-muted">of users (hashed by {rule.hashAttribute})</span>
           </>
         )}
-        <span className="text-muted">servir</span> <ValueChip value={rule.value} />
+        <span className="text-muted">serve</span> <ValueChip value={rule.value} />
       </p>
     </>
   )

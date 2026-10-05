@@ -25,9 +25,9 @@ initAuth()
         <h1 className="headline text-4xl">
           kto<span className="text-kto-red">ggle</span>
         </h1>
-        <p className="text-soft">Não foi possível conectar ao Keycloak em {config.keycloakUrl}.</p>
+        <p className="text-soft">Could not reach Keycloak at {config.keycloakUrl}.</p>
         <p className="text-sm text-muted">
-          Suba a stack local com <code className="font-mono">docker compose up -d</code> no repositório ktoggle.
+          Start the local stack with <code className="font-mono">docker compose up -d</code> in the ktoggle repository.
         </p>
       </div>,
     ),

@@ -32,7 +32,7 @@ export function FeaturesPage() {
     const env = environments.find((e) => e.key === environmentKey)
     const draft = await createDraft.mutateAsync({
       key: feature.key,
-      title: `${enabled ? 'Ligar' : 'Desligar'} em ${env?.name ?? environmentKey}`,
+      title: `Turn ${enabled ? 'on' : 'off'} in ${env?.name ?? environmentKey}`,
     })
     const rules = feature.environments[environmentKey]?.rules ?? []
     await updateEnvironment.mutateAsync({ id: draft.id, environmentKey, enabled, rules, version: draft.version })
@@ -43,36 +43,36 @@ export function FeaturesPage() {
     <>
       <PageHeader
         title="Features"
-        subtitle="Flags servidas aos SDKs no formato do GrowthBook. Toda alteração passa por draft e revisão; cada publicação gera um bundle imutável e assinado."
+        subtitle="Flags served to SDKs in GrowthBook's format. Every change goes through a draft and a review; each publication produces an immutable, signed bundle."
         actions={can('ktoggle-editor') && (
-          <Button onClick={() => setCreating(true)}><Plus className="size-4" /> Nova feature</Button>
+          <Button onClick={() => setCreating(true)}><Plus className="size-4" /> New feature</Button>
         )}
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="relative min-w-64 flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-kto-grey" />
-          <Input className="pl-9" placeholder="Buscar por chave ou descrição" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input className="pl-9" placeholder="Search by key or description" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <Select className="w-48" value={projectKey} onChange={(e) => setProjectKey(e.target.value)} aria-label="Projeto">
-          <option value="">Todos os projetos</option>
+        <Select className="w-48" value={projectKey} onChange={(e) => setProjectKey(e.target.value)} aria-label="Project">
+          <option value="">All projects</option>
           {projects.map((p) => (
             <option key={p.key} value={p.key}>{p.name}</option>
           ))}
         </Select>
         <Input className="w-40" placeholder="Tag" value={tag} onChange={(e) => setTag(e.target.value)} />
-        <Checkbox label="Arquivadas" checked={archived} onChange={setArchived} />
+        <Checkbox label="Archived" checked={archived} onChange={setArchived} />
       </div>
 
       <ErrorBanner error={features.error ?? createDraft.error ?? updateEnvironment.error} />
       {features.isLoading ? (
         <Spinner />
       ) : !features.data?.length ? (
-        <EmptyState title="Nenhuma feature encontrada">
-          {can('ktoggle-editor') ? 'Crie a primeira feature para começar.' : 'Ajuste os filtros.'}
+        <EmptyState title="No features found">
+          {can('ktoggle-editor') ? 'Create the first feature to get started.' : 'Adjust the filters.'}
         </EmptyState>
       ) : (
-        <Table head={['Feature', ...environments.map((e) => e.name), 'Padrão', 'Revisão', 'Atualizada']}>
+        <Table head={['Feature', ...environments.map((e) => e.name), 'Default', 'Revision', 'Updated']}>
           {features.data.map((feature) => (
             <FeatureRow
               key={feature.key}
@@ -127,7 +127,7 @@ function FeatureRow({ feature, environments, editable, drafts, onToggle }: {
                 onChange={(enabled) => onToggle(env, enabled)}
               />
               {settings?.rules.length ? (
-                <span className="font-mono text-xs text-kto-yellow" title="regras">{settings.rules.length}</span>
+                <span className="font-mono text-xs text-kto-yellow" title="rules">{settings.rules.length}</span>
               ) : null}
             </div>
           </td>

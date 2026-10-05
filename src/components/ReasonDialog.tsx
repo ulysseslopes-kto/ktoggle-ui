@@ -8,7 +8,7 @@ import { Field, Textarea } from './ui/Form'
  * Confirmation step that captures the "why" of a change. The reason is sent as X-Ktoggle-Reason and kept in the
  * audit trail, the revision history and the bundle activation chain.
  */
-export function ReasonDialog({ open, onOpenChange, title, description, required, confirmLabel = 'Confirmar', danger, onConfirm }: {
+export function ReasonDialog({ open, onOpenChange, title, description, required, confirmLabel = 'Confirm', danger, onConfirm }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
@@ -44,7 +44,7 @@ export function ReasonDialog({ open, onOpenChange, title, description, required,
       description={description}
       footer={
         <>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button variant={danger ? 'danger' : 'primary'} loading={busy} disabled={required && !reason.trim()} onClick={submit}>
             {confirmLabel}
           </Button>
@@ -52,8 +52,8 @@ export function ReasonDialog({ open, onOpenChange, title, description, required,
       }
     >
       <div className="space-y-4">
-        <Field label={required ? 'Motivo (obrigatório)' : 'Motivo (opcional)'} hint="Fica registrado na trilha de auditoria.">
-          <Textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex.: liberar para 10% dos usuários do BR" autoFocus />
+        <Field label={required ? 'Reason (required)' : 'Reason (optional)'} hint="Recorded in the audit trail.">
+          <Textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. release to 10% of users in BR" autoFocus />
         </Field>
         <ErrorBanner error={error} />
       </div>

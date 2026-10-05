@@ -21,20 +21,20 @@ import { useAuth } from '@/auth/auth'
 const NAV = [
   { section: 'Feature flags', items: [
     { to: '/features', label: 'Features', icon: Flag },
-    { to: '/drafts', label: 'Revisões', icon: GitPullRequest },
+    { to: '/drafts', label: 'Reviews', icon: GitPullRequest },
     { to: '/saved-groups', label: 'Saved groups', icon: Users },
-    { to: '/attributes', label: 'Atributos', icon: Tags },
+    { to: '/attributes', label: 'Attributes', icon: Tags },
   ] },
-  { section: 'Configuração', items: [
-    { to: '/environments', label: 'Ambientes', icon: Layers },
-    { to: '/projects', label: 'Projetos', icon: Boxes },
-    { to: '/sdk-connections', label: 'Conexões de SDK', icon: PlugZap },
-    { to: '/settings', label: 'Configurações', icon: Settings },
+  { section: 'Configuration', items: [
+    { to: '/environments', label: 'Environments', icon: Layers },
+    { to: '/projects', label: 'Projects', icon: Boxes },
+    { to: '/sdk-connections', label: 'SDK connections', icon: PlugZap },
+    { to: '/settings', label: 'Settings', icon: Settings },
   ] },
-  { section: 'Auditoria', items: [
+  { section: 'Auditing', items: [
     { to: '/audit', label: 'Audit log', icon: ScrollText },
     { to: '/replay', label: 'Replay', icon: History },
-    { to: '/decisions', label: 'Decisões', icon: ShieldCheck },
+    { to: '/decisions', label: 'Decisions', icon: ShieldCheck },
   ] },
   { section: 'Demo', items: [{ to: '/playground', label: 'SDK playground', icon: FlaskConical }] },
 ]
@@ -82,13 +82,13 @@ export function AppLayout() {
         </nav>
         <div className="border-t border-line p-4">
           <p className="truncate text-sm font-semibold">{user.name}</p>
-          <p className="truncate text-xs text-muted">{user.roles.length ? user.roles.join(', ') : 'sem acesso'}</p>
+          <p className="truncate text-xs text-muted">{user.roles.length ? user.roles.join(', ') : 'no access'}</p>
           <button
             type="button"
             onClick={user.logout}
             className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted hover:text-kto-red"
           >
-            <LogOut className="size-3.5" /> Sair
+            <LogOut className="size-3.5" /> Sign out
           </button>
         </div>
       </aside>

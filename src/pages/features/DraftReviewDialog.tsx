@@ -23,8 +23,8 @@ export function DraftReviewDialog({ draftId, open, onOpenChange, onPublished }: 
 }) {
   const view = useDraft(open ? draftId : null)
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} wide title="Revisar e publicar"
-      description="Compare o que está no ar com o que será publicado. Nada muda para os SDKs até a publicação.">
+    <Dialog open={open} onOpenChange={onOpenChange} wide title="Review & publish"
+      description="Compare what is live with what will be published. Nothing changes for SDKs until you publish.">
       {view.isLoading && <Spinner />}
       <ErrorBanner error={view.error} />
       {view.data && <ReviewBody view={view.data} onPublished={() => { onOpenChange(false); onPublished() }} />}
@@ -50,9 +50,9 @@ function ReviewBody({ view, onPublished }: { view: DraftView; onPublished: () =>
         <Badge tone={STATUS_TONE[draft.status]}>{STATUS_LABEL[draft.status]}</Badge>
         {draft.title && <span className="font-semibold">{draft.title}</span>}
         <span className="text-muted">
-          por {draft.createdBy} · baseado na revisão <span className="font-mono text-kto-yellow">#{draft.baseRevision}</span>
+          by {draft.createdBy} · based on revision <span className="font-mono text-kto-yellow">#{draft.baseRevision}</span>
           {view.liveRevision !== draft.baseRevision && (
-            <> · no ar: <span className="font-mono text-kto-yellow">#{view.liveRevision}</span></>
+            <> · live: <span className="font-mono text-kto-yellow">#{view.liveRevision}</span></>
           )}
         </span>
       </div>
@@ -61,7 +61,7 @@ function ReviewBody({ view, onPublished }: { view: DraftView; onPublished: () =>
         <div className="flex items-start gap-2 rounded-md border border-kto-yellow/40 bg-kto-yellow/10 px-4 py-3 text-sm">
           <ShieldAlert className="mt-0.5 size-4 shrink-0 text-kto-yellow" />
           <span>
-            Afeta <b>{view.reviewEnvironments.join(', ')}</b>, que exige aprovação de outra pessoa antes da publicação.
+            Affects <b>{view.reviewEnvironments.join(', ')}</b>, which requires approval from someone else before publishing.
           </span>
         </div>
       )}
@@ -69,18 +69,18 @@ function ReviewBody({ view, onPublished }: { view: DraftView; onPublished: () =>
       {view.conflicts.length > 0 && (
         <div className="space-y-3 rounded-md border border-kto-red/50 bg-kto-red/10 px-4 py-3 text-sm">
           <p className="flex items-center gap-2 font-semibold text-kto-red">
-            <AlertTriangle className="size-4" /> Conflito com alterações publicadas depois que este draft foi criado
+            <AlertTriangle className="size-4" /> Conflicts with changes published after this draft was created
           </p>
-          <p className="text-soft">Seções em conflito: {view.conflicts.map(sectionLabel).join(', ')}.</p>
+          <p className="text-soft">Conflicting sections: {view.conflicts.map(sectionLabel).join(', ')}.</p>
           {permissions.edit && (
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="secondary" loading={rebase.isPending}
                 onClick={() => rebase.mutate({ id: draft.id, keepDraft: true, version: draft.version })}>
-                <GitMerge className="size-3.5" /> Atualizar mantendo meu draft
+                <GitMerge className="size-3.5" /> Update, keeping my draft
               </Button>
               <Button size="sm" variant="ghost" loading={rebase.isPending}
                 onClick={() => rebase.mutate({ id: draft.id, keepDraft: false, version: draft.version })}>
-                Atualizar mantendo o que está no ar
+                Update, keeping what is live
               </Button>
             </div>
           )}
@@ -88,16 +88,16 @@ function ReviewBody({ view, onPublished }: { view: DraftView; onPublished: () =>
       )}
 
       <section className="space-y-3">
-        <h3 className="text-sm font-bold">Alterações ({view.changes.length})</h3>
+        <h3 className="text-sm font-bold">Changes ({view.changes.length})</h3>
         {view.changes.length === 0 ? (
-          <p className="text-sm text-muted">Nenhuma diferença em relação ao que está no ar.</p>
+          <p className="text-sm text-muted">No differences from what is live.</p>
         ) : (
           view.changes.map((change) => <ChangeDiff key={change.section} change={change} conflict={view.conflicts.includes(change.section)} />)
         )}
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-sm font-bold">Histórico e comentários</h3>
+        <h3 className="text-sm font-bold">History & comments</h3>
         <ol className="space-y-2 border-l border-line pl-4">
           {view.events.map((event) => (
             <li key={event.id} className="text-sm">
@@ -110,7 +110,7 @@ function ReviewBody({ view, onPublished }: { view: DraftView; onPublished: () =>
         </ol>
         {draft.status !== 'PUBLISHED' && draft.status !== 'DISCARDED' && (
           <Textarea rows={2} value={comment} onChange={(e) => setComment(e.target.value)}
-            placeholder="Comentário (obrigatório para solicitar alterações)" className="font-sans text-sm" />
+            placeholder="Comment (required to request changes)" className="font-sans text-sm" />
         )}
       </section>
 
@@ -126,39 +126,39 @@ function ReviewBody({ view, onPublished }: { view: DraftView; onPublished: () =>
 
       <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line pt-4">
         <Button variant="ghost" disabled={!comment.trim()} loading={action.isPending} onClick={() => run('comments')}>
-          <MessageSquare className="size-4" /> Comentar
+          <MessageSquare className="size-4" /> Comment
         </Button>
         {permissions.requestReview && view.reviewEnvironments.length > 0 && (
-          <Button variant="secondary" loading={action.isPending} onClick={() => run('request-review')}>Solicitar revisão</Button>
+          <Button variant="secondary" loading={action.isPending} onClick={() => run('request-review')}>Request review</Button>
         )}
         {permissions.review && (
           <>
             <Button variant="danger" disabled={!comment.trim()} loading={action.isPending} onClick={() => run('request-changes')}>
-              Solicitar alterações
+              Request changes
             </Button>
             <Button variant="positive" loading={action.isPending} onClick={() => run('approve')}>
-              <CheckCircle2 className="size-4" /> Aprovar
+              <CheckCircle2 className="size-4" /> Approve
             </Button>
           </>
         )}
         {permissions.bypass && (
           <Button variant="danger" onClick={() => setConfirm('bypass')}>
-            <ShieldAlert className="size-4" /> Publicar sem aprovação
+            <ShieldAlert className="size-4" /> Publish without approval
           </Button>
         )}
-        {permissions.publish && <Button onClick={() => setConfirm('publish')}>Publicar</Button>}
+        {permissions.publish && <Button onClick={() => setConfirm('publish')}>Publish</Button>}
       </div>
 
       <ReasonDialog
         open={confirm !== null}
         onOpenChange={(o) => !o && setConfirm(null)}
-        title={confirm === 'bypass' ? 'Publicação de emergência' : 'Publicar draft'}
+        title={confirm === 'bypass' ? 'Emergency publication' : 'Publish draft'}
         description={confirm === 'bypass'
-          ? 'Publica sem a aprovação exigida. Fica destacado na auditoria como BYPASS — use apenas em incidentes.'
-          : 'Gera uma nova revisão e um novo bundle assinado para as conexões dos ambientes afetados.'}
+          ? 'Publishes without the required approval. It is flagged in the audit trail as BYPASS — use only during incidents.'
+          : 'Creates a new revision and a new signed bundle for the connections of the affected environments.'}
         required={confirm === 'bypass'}
         danger={confirm === 'bypass'}
-        confirmLabel={confirm === 'bypass' ? 'Publicar mesmo assim' : 'Publicar'}
+        confirmLabel={confirm === 'bypass' ? 'Publish anyway' : 'Publish'}
         onConfirm={async (reason) => {
           await publish.mutateAsync({ id: draft.id, bypass: confirm === 'bypass', reason })
           onPublished()
@@ -177,10 +177,10 @@ function ChangeDiff({ change, conflict }: { change: SectionChange; conflict: boo
         {conflict && <Badge tone="red">conflito</Badge>}
       </div>
       <div className="grid divide-x divide-line md:grid-cols-2">
-        <DiffSide title="No ar" tone="muted">
+        <DiffSide title="Live" tone="muted">
           {isEnvironment ? <EnvironmentView settings={change.live as unknown as EnvironmentSettings | null} /> : <FieldView value={change.live} />}
         </DiffSide>
-        <DiffSide title="Após publicar" tone="red">
+        <DiffSide title="After publishing" tone="red">
           {isEnvironment ? <EnvironmentView settings={change.proposed as unknown as EnvironmentSettings | null} /> : <FieldView value={change.proposed} />}
         </DiffSide>
       </div>
@@ -206,18 +206,18 @@ function FieldView({ value }: { value: Json }) {
 function EnvironmentView({ settings }: { settings: EnvironmentSettings | null }) {
   const groups = useSavedGroups().data ?? []
   const groupName = (key: string) => groups.find((g) => g.key === key)?.name ?? key
-  if (!settings) return <span className="text-sm text-muted">não configurado (desligado)</span>
+  if (!settings) return <span className="text-sm text-muted">not configured (off)</span>
   return (
     <div className="space-y-3">
-      <Badge tone={settings.enabled ? 'green' : 'neutral'}>{settings.enabled ? 'Ligada' : 'Desligada'}</Badge>
+      <Badge tone={settings.enabled ? 'green' : 'neutral'}>{settings.enabled ? 'On' : 'Off'}</Badge>
       {settings.rules.length === 0 ? (
-        <p className="text-sm text-muted">Sem regras</p>
+        <p className="text-sm text-muted">No rules</p>
       ) : (
         <ol className="space-y-2">
           {settings.rules.map((rule, i) => (
             <li key={rule.id ?? i} className={clsx('rounded-md border border-line p-2.5', !rule.enabled && 'opacity-50')}>
               <p className="mb-1 font-mono text-[0.6875rem] text-kto-grey">
-                #{i + 1} {rule.type} {rule.description ? `· ${rule.description}` : ''} {!rule.enabled && '· desativada'}
+                #{i + 1} {rule.type} {rule.description ? `· ${rule.description}` : ''} {!rule.enabled && '· disabled'}
               </p>
               <RuleSummary rule={rule} groupName={groupName} />
             </li>

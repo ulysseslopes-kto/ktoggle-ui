@@ -19,7 +19,7 @@ function VerifyDialog({ event, onClose }: { event: DecisionEvent; onClose: () =>
     try {
       verify.mutate({ eventId: event.eventId, attributes: JSON.parse(text) as Json })
     } catch (err) {
-      setLocalError(`JSON inválido: ${err instanceof Error ? err.message : String(err)}`)
+      setLocalError(`Invalid JSON: ${err instanceof Error ? err.message : String(err)}`)
     }
   }
 
@@ -27,17 +27,17 @@ function VerifyDialog({ event, onClose }: { event: DecisionEvent; onClose: () =>
     <Dialog
       open
       onOpenChange={(open) => !open && onClose()}
-      title="Verificar atributos"
-      description="Informe os atributos completos (inclusive PII) do usuário; o digest HMAC é recalculado e comparado ao registrado na decisão, sem que o dado em claro seja armazenado."
+      title="Verify attributes"
+      description="Enter the user's complete attributes (including PII); the HMAC digest is recomputed and compared with the one recorded for the decision, without storing the data in clear."
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>Fechar</Button>
-          <Button type="submit" form="verify-form" loading={verify.isPending}><ShieldCheck className="size-4" /> Verificar</Button>
+          <Button variant="ghost" onClick={onClose}>Close</Button>
+          <Button type="submit" form="verify-form" loading={verify.isPending}><ShieldCheck className="size-4" /> Verify</Button>
         </>
       }
     >
       <form id="verify-form" onSubmit={submit} className="space-y-4">
-        <Field label="Atributos (JSON)">
+        <Field label="Attributes (JSON)">
           <Textarea rows={8} value={text} onChange={(e) => setText(e.target.value)} spellCheck={false} autoFocus />
         </Field>
         {localError && <p className="text-sm text-kto-red">{localError}</p>}
@@ -45,11 +45,11 @@ function VerifyDialog({ event, onClose }: { event: DecisionEvent; onClose: () =>
         {verify.data &&
           (verify.data.matches ? (
             <div className="flex items-center gap-3 rounded-md border border-kto-green/40 bg-kto-green/10 px-4 py-4 text-lg font-bold text-kto-green">
-              <CheckCircle2 className="size-7" /> Os atributos conferem
+              <CheckCircle2 className="size-7" /> Attributes match
             </div>
           ) : (
             <div className="flex items-center gap-3 rounded-md border border-kto-red/50 bg-kto-red/10 px-4 py-4 text-lg font-bold text-kto-red">
-              <XCircle className="size-7" /> Não conferem
+              <XCircle className="size-7" /> Attributes do not match
             </div>
           ))}
       </form>
@@ -88,29 +88,29 @@ export function DecisionsPage() {
   return (
     <>
       <PageHeader
-        title="Decisões"
-        subtitle="Eventos opt-in enviados pelos callbacks de feature-usage dos SDKs. Só atributos não-PII ficam em claro; os demais entram apenas como digest HMAC."
+        title="Decisions"
+        subtitle="Opt-in events sent by the SDKs' feature-usage callbacks. Only non-PII attributes are kept in clear; the rest are recorded only as an HMAC digest."
       />
       <form onSubmit={apply} className="mb-4 flex flex-wrap items-end gap-3">
-        <Field label="Conexão SDK" className="w-56">
+        <Field label="SDK connection" className="w-56">
           <Select value={draft.clientKey} onChange={(e) => setDraft({ ...draft, clientKey: e.target.value })}>
-            <option value="">Todas</option>
+            <option value="">All</option>
             {connections.data?.map((c) => <option key={c.clientKey} value={c.clientKey}>{c.name}</option>)}
           </Select>
         </Field>
         <Field label="Feature" className="w-56">
           <Input value={draft.featureKey} onChange={(e) => setDraft({ ...draft, featureKey: e.target.value })} />
         </Field>
-        <Field label="Hash do bundle" className="w-64">
+        <Field label="Bundle hash" className="w-64">
           <Input value={draft.bundleHash} onChange={(e) => setDraft({ ...draft, bundleHash: e.target.value })} className="font-mono" />
         </Field>
-        <Button type="submit" variant="secondary">Filtrar</Button>
+        <Button type="submit" variant="secondary">Filter</Button>
       </form>
       {decisions.isLoading && <Spinner />}
       <ErrorBanner error={decisions.error} />
-      {decisions.data?.length === 0 && <EmptyState title="Nenhuma decisão registrada" />}
+      {decisions.data?.length === 0 && <EmptyState title="No decisions recorded" />}
       {decisions.data && decisions.data.length > 0 && (
-        <Table head={['Quando', 'Client key', 'Feature', 'Valor', 'Regra', 'SDK', 'Bundle', 'Atributos (não-PII)', '']}>
+        <Table head={['When', 'Client key', 'Feature', 'Value', 'Rule', 'SDK', 'Bundle', 'Attributes (non-PII)', '']}>
           {decisions.data.map((d) => (
             <tr key={d.eventId} className="hover:bg-surface">
               <td className="whitespace-nowrap px-4 py-3 text-muted">{formatDate(d.occurredAt)}</td>
@@ -128,9 +128,9 @@ export function DecisionsPage() {
                     variant="secondary"
                     onClick={() => navigate(`/replay?bundle=${encodeURIComponent(d.bundleHash)}&feature=${encodeURIComponent(d.featureKey)}`)}
                   >
-                    <Play className="size-3.5" /> Reproduzir
+                    <Play className="size-3.5" /> Replay
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setVerifying(d)}>Verificar atributos</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setVerifying(d)}>Verify attributes</Button>
                 </div>
               </td>
             </tr>

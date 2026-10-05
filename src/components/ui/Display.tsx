@@ -53,7 +53,7 @@ export function Badge({ tone = 'neutral', children, className }: { tone?: Tone; 
   )
 }
 
-export function Spinner({ label = 'Carregando…' }: { label?: string }) {
+export function Spinner({ label = 'Loading…' }: { label?: string }) {
   return (
     <div className="flex items-center gap-2 py-10 text-sm text-muted" role="status">
       <Loader2 className="size-4 animate-spin text-kto-red" /> {label}
@@ -78,7 +78,7 @@ export function ErrorBanner({ error }: { error: unknown }) {
     <div className="rounded-md border border-kto-red/50 bg-kto-red/10 px-4 py-3 text-sm" role="alert">
       <div className="flex items-center gap-2 font-semibold text-kto-red">
         <AlertTriangle className="size-4" />
-        {error instanceof Error ? error.message : 'Erro inesperado'}
+        {error instanceof Error ? error.message : 'Unexpected error'}
         {apiError?.messageCode && <span className="font-mono text-xs opacity-80">{apiError.messageCode}</span>}
       </div>
       {apiError && apiError.details.length > 0 && (
@@ -101,7 +101,7 @@ export function Code({ value, short, className }: { value: string; short?: boole
       <span title={value}>{shown}</span>
       <button
         type="button"
-        aria-label="Copiar"
+        aria-label="Copy"
         className="text-muted hover:text-white"
         onClick={(e) => {
           e.stopPropagation()
@@ -157,5 +157,5 @@ export function Table({ head, children, className }: { head: ReactNode[]; childr
 
 export function formatDate(iso?: string | null): string {
   if (!iso) return '—'
-  return new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'medium' })
+  return new Date(iso).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'medium' })
 }

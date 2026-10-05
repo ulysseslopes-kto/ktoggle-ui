@@ -63,15 +63,15 @@ export function ConditionEditor({ value, onChange, attributes }: {
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted">
           {mode === 'visual'
-            ? clauses.length === 0 ? 'Sem condição: a regra vale para todos os usuários.' : 'Todas as condições devem ser verdadeiras (E).'
-            : 'Sintaxe MongoDB, a mesma avaliada pelos SDKs do GrowthBook.'}
+            ? clauses.length === 0 ? 'No condition: the rule applies to all users.' : 'All conditions must be true (AND).'
+            : 'MongoDB syntax, the same evaluated by the GrowthBook SDKs.'}
         </span>
         <Button
           size="sm"
           variant="ghost"
           onClick={switchMode}
           disabled={mode === 'json' && !canGoVisual}
-          title={mode === 'json' && !canGoVisual ? 'Condição complexa demais para o modo visual' : undefined}
+          title={mode === 'json' && !canGoVisual ? 'Condition too complex for the visual mode' : undefined}
         >
           {mode === 'visual' ? <><Code2 className="size-3.5" /> JSON</> : <><Wand2 className="size-3.5" /> Visual</>}
         </Button>
@@ -85,13 +85,13 @@ export function ConditionEditor({ value, onChange, attributes }: {
               updateClauses(clauses.map((c, i) => (i === index ? { ...c, ...patch } : c)))
             return (
               <div key={index} className="grid grid-cols-[1fr_1fr_1.2fr_auto] items-center gap-2">
-                <Select value={clause.attribute} onChange={(e) => replace({ attribute: e.target.value })} aria-label="Atributo">
-                  <option value="">Atributo…</option>
+                <Select value={clause.attribute} onChange={(e) => replace({ attribute: e.target.value })} aria-label="Attribute">
+                  <option value="">Attribute…</option>
                   {active.map((a) => (
                     <option key={a.key} value={a.key}>{a.key}</option>
                   ))}
                 </Select>
-                <Select value={clause.operator} onChange={(e) => replace({ operator: e.target.value as Operator })} aria-label="Operador">
+                <Select value={clause.operator} onChange={(e) => replace({ operator: e.target.value as Operator })} aria-label="Operator">
                   {OPERATORS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
@@ -100,15 +100,15 @@ export function ConditionEditor({ value, onChange, attributes }: {
                   <Input
                     value={clause.value}
                     onChange={(e) => replace({ value: e.target.value })}
-                    placeholder={clause.operator === 'in' || clause.operator === 'nin' ? 'BR, PT, AR' : 'valor'}
-                    aria-label="Valor"
+                    placeholder={clause.operator === 'in' || clause.operator === 'nin' ? 'BR, PT, AR' : 'value'}
+                    aria-label="Value"
                   />
                 ) : (
                   <span />
                 )}
                 <button
                   type="button"
-                  aria-label="Remover condição"
+                  aria-label="Remove condition"
                   className="rounded p-2 text-muted hover:bg-surface-2 hover:text-kto-red"
                   onClick={() => updateClauses(clauses.filter((_, i) => i !== index))}
                 >
@@ -118,13 +118,13 @@ export function ConditionEditor({ value, onChange, attributes }: {
             )
           })}
           <Button size="sm" variant="secondary" onClick={() => updateClauses([...clauses, { attribute: '', operator: 'eq', value: '' }])}>
-            <Plus className="size-3.5" /> Adicionar condição
+            <Plus className="size-3.5" /> Add condition
           </Button>
         </div>
       ) : (
         <div>
           <Textarea rows={6} value={json} onChange={(e) => updateJson(e.target.value)} spellCheck={false} placeholder='{"country": {"$in": ["BR", "PT"]}}' />
-          {jsonError && <p className="mt-1 text-xs text-kto-red">JSON inválido</p>}
+          {jsonError && <p className="mt-1 text-xs text-kto-red">Invalid JSON</p>}
         </div>
       )}
     </div>

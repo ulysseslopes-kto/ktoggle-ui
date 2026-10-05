@@ -15,7 +15,7 @@ export function RevisionsCard({ feature, onDraftCreated }: { feature: Feature; o
   const [viewing, setViewing] = useState<FeatureRevision | null>(null)
 
   return (
-    <Card title="Histórico de revisões">
+    <Card title="Revision history">
       {revisions.isLoading && <Spinner />}
       <ErrorBanner error={revisions.error ?? revert.error} />
       <ol className="divide-y divide-line">
@@ -24,18 +24,18 @@ export function RevisionsCard({ feature, onDraftCreated }: { feature: Feature; o
             <div className="min-w-0">
               <p className="flex items-center gap-2 text-sm">
                 <span className="font-mono font-bold text-kto-yellow">#{revision.revision}</span>
-                {revision.revision === feature.revision && <Badge tone="green">no ar</Badge>}
+                {revision.revision === feature.revision && <Badge tone="green">live</Badge>}
                 <span className="font-semibold">{revision.createdBy}</span>
                 <span className="text-muted">· {formatDate(revision.createdAt)}</span>
               </p>
               {revision.comment && <p className="mt-0.5 text-sm text-soft">“{revision.comment}”</p>}
             </div>
             <div className="flex gap-2">
-              <Button size="sm" variant="ghost" onClick={() => setViewing(revision)}>Ver</Button>
+              <Button size="sm" variant="ghost" onClick={() => setViewing(revision)}>View</Button>
               {can('ktoggle-editor') && revision.revision !== feature.revision && (
                 <Button size="sm" variant="secondary" loading={revert.isPending}
                   onClick={() => revert.mutate({ key: feature.key, revision: revision.revision }, { onSuccess: onDraftCreated })}>
-                  <RotateCcw className="size-3.5" /> Reverter (cria draft)
+                  <RotateCcw className="size-3.5" /> Revert (creates a draft)
                 </Button>
               )}
             </div>
@@ -43,7 +43,7 @@ export function RevisionsCard({ feature, onDraftCreated }: { feature: Feature; o
         ))}
       </ol>
 
-      <Dialog open={viewing !== null} onOpenChange={(open) => !open && setViewing(null)} wide title={`Revisão #${viewing?.revision}`}
+      <Dialog open={viewing !== null} onOpenChange={(open) => !open && setViewing(null)} wide title={`Revision #${viewing?.revision}`}
         description={viewing ? `${viewing.createdBy} · ${formatDate(viewing.createdAt)} · change ${viewing.changeId}` : undefined}>
         {viewing && <JsonBlock value={viewing.snapshot} className="max-h-[60vh]" />}
       </Dialog>

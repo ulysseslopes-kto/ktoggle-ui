@@ -77,7 +77,7 @@ const TAB_LABELS: Record<SnippetTab, string> = { java: 'Java', javascript: 'Java
 function UsageCard({ clientKey }: { clientKey: string }) {
   const [tab, setTab] = useState<SnippetTab>('javascript')
   return (
-    <Card title="Como usar">
+    <Card title="How to use">
       <div className="mb-3 flex gap-1" role="tablist">
         {(Object.keys(TAB_LABELS) as SnippetTab[]).map((t) => (
           <button
@@ -105,18 +105,18 @@ function BundleDialog({ hash, onClose }: { hash: string; onClose: () => void }) 
   const rows: [string, ReactNode][] = data
     ? [
         ['Hash', <Code key="h" value={data.bundle.hash} />],
-        ['Chave de assinatura (keyId)', <span key="k" className="font-mono text-xs">{data.bundle.keyId}</span>],
-        ['Algoritmo', <span key="a" className="font-mono text-xs">{data.bundle.signatureAlg}</span>],
-        ['Criado em', formatDate(data.bundle.createdAt)],
-        ['Criado por', data.bundle.createdBy],
+        ['Signing key (keyId)', <span key="k" className="font-mono text-xs">{data.bundle.keyId}</span>],
+        ['Algorithm', <span key="a" className="font-mono text-xs">{data.bundle.signatureAlg}</span>],
+        ['Created at', formatDate(data.bundle.createdAt)],
+        ['Created by', data.bundle.createdBy],
         [
-          'Avaliador',
+          'Evaluator',
           <span key="e" className="font-mono text-xs">
             {data.body.evaluator.spec} · hash v{data.body.evaluator.hashVersion} · {data.body.evaluator.referenceEvaluator}
           </span>,
         ],
         [
-          'Fontes',
+          'Sources',
           <span key="s" className="font-mono text-xs">
             {Object.entries(data.body.sources).map(([k, v]) => `${k}@${v}`).join(', ') || '—'}
           </span>,
@@ -124,17 +124,17 @@ function BundleDialog({ hash, onClose }: { hash: string; onClose: () => void }) 
       ]
     : []
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()} title="Bundle verificado" wide>
-      {bundle.isLoading && <Spinner label="Verificando assinatura e hash…" />}
+    <Dialog open onOpenChange={(open) => !open && onClose()} title="Verified bundle" wide>
+      {bundle.isLoading && <Spinner label="Verifying signature and hash…" />}
       {bundle.error && (
         <div className="space-y-2">
-          <p className="text-sm font-semibold text-kto-red">Possível violação de integridade: o bundle não passou na verificação.</p>
+          <p className="text-sm font-semibold text-kto-red">Possible integrity violation: the bundle failed verification.</p>
           <ErrorBanner error={bundle.error} />
         </div>
       )}
       {data && (
         <div className="space-y-4">
-          <Badge tone="green"><ShieldCheck className="size-3.5" /> Assinatura e hash verificados</Badge>
+          <Badge tone="green"><ShieldCheck className="size-3.5" /> Signature and hash verified</Badge>
           <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
             {rows.map(([label, value]) => (
               <div key={label} className="contents">
@@ -163,33 +163,33 @@ function ActiveBundleCard({ clientKey, pinned, latest, onOpenBundle }: {
   const unpin = useUnpin(clientKey)
   const [unpinning, setUnpinning] = useState(false)
   return (
-    <Card title="Bundle ativo">
+    <Card title="Active bundle">
       {pinned && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-kto-red/50 bg-kto-red/10 px-4 py-3 text-sm">
           <span className="flex items-center gap-2 font-semibold text-kto-red">
-            <ShieldAlert className="size-4" /> Conexão fixada (pinned): novas publicações não são entregues até liberar.
+            <ShieldAlert className="size-4" /> Connection pinned: new publications are not delivered until the pin is released.
           </span>
-          {can('ktoggle-admin') && <Button size="sm" variant="danger" onClick={() => setUnpinning(true)}>Liberar (unpin)</Button>}
+          {can('ktoggle-admin') && <Button size="sm" variant="danger" onClick={() => setUnpinning(true)}>Release pin</Button>}
         </div>
       )}
       {!latest ? (
-        <p className="text-sm text-muted">Nenhuma ativação registrada ainda.</p>
+        <p className="text-sm text-muted">No activations yet.</p>
       ) : (
         <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
           <dt className="text-muted">Hash</dt>
           <dd>
             <span className="inline-flex items-center gap-2">
                   <Code value={latest.bundleHash} short />
-                  <button onClick={() => onOpenBundle(latest.bundleHash)} className="text-xs text-kto-red hover:underline">ver</button>
+                  <button onClick={() => onOpenBundle(latest.bundleHash)} className="text-xs text-kto-red hover:underline">view</button>
                 </span>
           </dd>
-          <dt className="text-muted">Tipo</dt>
+          <dt className="text-muted">Kind</dt>
           <dd><KindBadge kind={latest.kind} /></dd>
-          <dt className="text-muted">Por</dt>
+          <dt className="text-muted">By</dt>
           <dd>{latest.activatedBy}</dd>
-          <dt className="text-muted">Quando</dt>
+          <dt className="text-muted">When</dt>
           <dd>{formatDate(latest.activatedAt)}</dd>
-          <dt className="text-muted">Motivo</dt>
+          <dt className="text-muted">Reason</dt>
           <dd>{latest.reason || '—'}</dd>
         </dl>
       )}
@@ -197,9 +197,9 @@ function ActiveBundleCard({ clientKey, pinned, latest, onOpenBundle }: {
         <ReasonDialog
           open
           onOpenChange={(open) => !open && setUnpinning(false)}
-          title="Liberar conexão fixada?"
-          description="A conexão volta a receber o bundle mais recente publicado."
-          confirmLabel="Liberar"
+          title="Release the pinned connection?"
+          description="The connection will receive the latest published bundle again."
+          confirmLabel="Release"
           onConfirm={(reason) => unpin.mutateAsync({ reason })}
         />
       )}
@@ -215,17 +215,17 @@ function IntegrityCard({ clientKey }: { clientKey: string }) {
   const verify = useVerifyActivations(clientKey)
   const v = verify.data
   return (
-    <Card title="Integridade">
-      {verify.isLoading && <Spinner label="Verificando cadeia…" />}
+    <Card title="Integrity">
+      {verify.isLoading && <Spinner label="Verifying chain…" />}
       <ErrorBanner error={verify.error} />
       {v && v.valid && (
         <p className="flex items-center gap-2 text-sm font-semibold text-kto-green">
-          <ShieldCheck className="size-5" /> Cadeia íntegra · <span className="font-mono">{v.checked}</span> ativações verificadas
+          <ShieldCheck className="size-5" /> Chain verified · <span className="font-mono">{v.checked}</span> activations checked
         </p>
       )}
       {v && !v.valid && (
         <p className="flex items-center gap-2 text-sm font-semibold text-kto-red">
-          <ShieldAlert className="size-5" /> Cadeia violada{v.brokenAt != null && <> na posição <span className="font-mono">{v.brokenAt}</span></>}
+          <ShieldAlert className="size-5" /> Chain broken{v.brokenAt != null && <> at position <span className="font-mono">{v.brokenAt}</span></>}
           {v.message && <span className="font-normal text-soft">— {v.message}</span>}
         </p>
       )}
@@ -245,11 +245,11 @@ function ActivationsCard({ clientKey, activations, onOpenBundle }: {
   const currentHash = sorted[0]?.bundleHash
 
   return (
-    <Card title="Histórico de ativações">
+    <Card title="Activation history">
       {sorted.length === 0 ? (
-        <EmptyState title="Sem ativações" />
+        <EmptyState title="No activations" />
       ) : (
-        <Table head={['#', 'Tipo', 'Bundle', 'Ativado por', 'Quando', 'Motivo', '']}>
+        <Table head={['#', 'Kind', 'Bundle', 'Activated by', 'When', 'Reason', '']}>
           {sorted.map((a) => (
             <tr key={a.id} className="hover:bg-surface-2/40">
               <td className="px-4 py-3 font-mono text-xs font-semibold text-kto-yellow">{a.position}</td>
@@ -257,7 +257,7 @@ function ActivationsCard({ clientKey, activations, onOpenBundle }: {
               <td className="px-4 py-3">
                 <span className="inline-flex items-center gap-2">
                   <Code value={a.bundleHash} short />
-                  <button onClick={() => onOpenBundle(a.bundleHash)} className="text-xs text-kto-red hover:underline">ver</button>
+                  <button onClick={() => onOpenBundle(a.bundleHash)} className="text-xs text-kto-red hover:underline">view</button>
                 </span>
               </td>
               <td className="px-4 py-3">{a.activatedBy}</td>
@@ -265,11 +265,11 @@ function ActivationsCard({ clientKey, activations, onOpenBundle }: {
               <td className="px-4 py-3 text-muted">{a.reason || '—'}</td>
               <td className="px-4 py-3 text-right">
                 {a.bundleHash === currentHash ? (
-                  <Badge tone="green">atual</Badge>
+                  <Badge tone="green">current</Badge>
                 ) : (
                   can('ktoggle-admin') && (
                     <Button size="sm" variant="danger" onClick={() => setTarget(a)}>
-                      <RotateCcw className="size-3.5" /> Rollback para este bundle
+                      <RotateCcw className="size-3.5" /> Roll back to this bundle
                     </Button>
                   )
                 )}
@@ -284,9 +284,9 @@ function ActivationsCard({ clientKey, activations, onOpenBundle }: {
           required
           danger
           onOpenChange={(open) => !open && setTarget(null)}
-          title="Rollback para este bundle"
-          description={<>O bundle <Code value={target.bundleHash} short /> voltará a ser entregue aos SDKs desta conexão (ele fica fixado até ser liberado).</>}
-          confirmLabel="Executar rollback"
+          title="Roll back to this bundle"
+          description={<>Bundle <Code value={target.bundleHash} short /> will be delivered to this connection's SDKs again (it stays pinned until released).</>}
+          confirmLabel="Roll back"
           onConfirm={(reason) => rollback.mutateAsync({ hash: target.bundleHash, reason: reason ?? '' })}
         />
       )}
@@ -297,12 +297,12 @@ function ActivationsCard({ clientKey, activations, onOpenBundle }: {
 function DeliveriesCard({ clientKey }: { clientKey: string }) {
   const deliveries = useDeliveries(clientKey)
   return (
-    <Card title="Entregas">
+    <Card title="Deliveries">
       {deliveries.isLoading && <Spinner />}
       <ErrorBanner error={deliveries.error} />
-      {deliveries.data?.length === 0 && <EmptyState title="Nenhuma entrega registrada" />}
+      {deliveries.data?.length === 0 && <EmptyState title="No deliveries recorded" />}
       {deliveries.data && deliveries.data.length > 0 && (
-        <Table head={['Canal', 'Pod', 'SDK', 'Bundle', 'Entregas', 'Primeira', 'Última']}>
+        <Table head={['Channel', 'Pod', 'SDK', 'Bundle', 'Deliveries', 'First seen', 'Last seen']}>
           {deliveries.data.map((d, i) => (
             <tr key={`${d.bundleHash}-${d.pod}-${d.channel}-${d.windowStart}-${i}`}>
               <td className="px-4 py-3"><Badge tone="outline">{d.channel}</Badge></td>
@@ -327,14 +327,14 @@ export function SdkConnectionDetailPage() {
   const [openBundle, setOpenBundle] = useState<string | null>(null)
 
   if (connection.isLoading) return <Spinner />
-  if (connection.error || !connection.data) return <ErrorBanner error={connection.error ?? new Error('Conexão não encontrada')} />
+  if (connection.error || !connection.data) return <ErrorBanner error={connection.error ?? new Error('Connection not found')} />
   const c = connection.data
   const latest = activations.data?.reduce<BundleActivation | undefined>((best, a) => (!best || a.position > best.position ? a : best), undefined)
 
   return (
     <>
       <Link to="/sdk-connections" className="mb-3 inline-flex items-center gap-1 text-xs text-muted hover:text-white">
-        <ArrowLeft className="size-3.5" /> Conexões SDK
+        <ArrowLeft className="size-3.5" /> SDK connections
       </Link>
       <PageHeader
         title={c.name}

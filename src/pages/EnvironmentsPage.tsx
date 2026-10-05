@@ -30,33 +30,33 @@ function EnvironmentDialog({ environment, onClose }: { environment: Environment 
     <Dialog
       open
       onOpenChange={(open) => !open && onClose()}
-      title={editing ? `Editar ambiente ${editing.key}` : 'Novo ambiente'}
+      title={editing ? `Edit environment ${editing.key}` : 'New environment'}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
           <Button type="submit" form="environment-form" loading={save.isPending} disabled={!name.trim() || (!editing && !key.trim())}>
-            Salvar
+            Save
           </Button>
         </>
       }
     >
       <form id="environment-form" onSubmit={submit} className="space-y-4">
         {!editing && (
-          <Field label="Chave" hint="Identificador imutável, ex.: production">
+          <Field label="Key" hint="Immutable identifier, e.g. production">
             <Input value={key} onChange={(e) => setKey(e.target.value)} autoFocus />
           </Field>
         )}
-        <Field label="Nome">
+        <Field label="Name">
           <Input value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
-        <Field label="Descrição">
+        <Field label="Description">
           <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
         </Field>
-        <Field label="Ordem" hint="Define a ordem de exibição dos ambientes.">
+        <Field label="Order" hint="Display order of the environments.">
           <Input type="number" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} />
         </Field>
         <Checkbox
-          label="Publicação exige aprovação de outra pessoa (quatro olhos)"
+          label="Publishing requires approval from someone else (four eyes)"
           checked={requiresReview}
           onChange={setRequiresReview}
         />
@@ -77,28 +77,28 @@ export function EnvironmentsPage() {
   return (
     <>
       <PageHeader
-        title="Ambientes"
-        subtitle="Cada ambiente tem suas próprias regras e bundles (ex.: staging, production)."
-        actions={admin && <Button onClick={() => setEditing('new')}><Plus className="size-4" /> Novo ambiente</Button>}
+        title="Environments"
+        subtitle="Each environment has its own rules and bundles (e.g. staging, production)."
+        actions={admin && <Button onClick={() => setEditing('new')}><Plus className="size-4" /> New environment</Button>}
       />
       {environments.isLoading && <Spinner />}
       <ErrorBanner error={environments.error} />
-      {environments.data?.length === 0 && <EmptyState title="Nenhum ambiente cadastrado" />}
+      {environments.data?.length === 0 && <EmptyState title="No environments yet" />}
       {environments.data && environments.data.length > 0 && (
-        <Table head={['Chave', 'Nome', 'Descrição', 'Aprovação', 'Ordem', 'Atualizado', '']}>
+        <Table head={['Key', 'Name', 'Description', 'Approval', 'Order', 'Updated', '']}>
           {environments.data.map((p) => (
             <tr key={p.key} className="hover:bg-surface">
               <td className="px-4 py-3"><Code value={p.key} /></td>
               <td className="px-4 py-3 font-semibold">{p.name}</td>
               <td className="px-4 py-3 text-muted">{p.description || '—'}</td>
-              <td className="px-4 py-3">{p.requiresReview ? <Badge tone="yellow">exige aprovação</Badge> : <span className="text-xs text-muted">livre</span>}</td>
+              <td className="px-4 py-3">{p.requiresReview ? <Badge tone="yellow">requires approval</Badge> : <span className="text-xs text-muted">not required</span>}</td>
               <td className="px-4 py-3 font-mono text-xs font-semibold text-kto-yellow">{p.sortOrder}</td>
               <td className="whitespace-nowrap px-4 py-3 text-muted">{formatDate(p.updatedAt)}</td>
               <td className="px-4 py-3">
                 {admin && (
                   <div className="flex justify-end gap-1">
-                    <Button size="sm" variant="ghost" aria-label="Editar" onClick={() => setEditing(p)}><Pencil className="size-4" /></Button>
-                    <Button size="sm" variant="ghost" aria-label="Excluir" onClick={() => setDeleting(p)}><Trash2 className="size-4" /></Button>
+                    <Button size="sm" variant="ghost" aria-label="Edit" onClick={() => setEditing(p)}><Pencil className="size-4" /></Button>
+                    <Button size="sm" variant="ghost" aria-label="Delete" onClick={() => setDeleting(p)}><Trash2 className="size-4" /></Button>
                   </div>
                 )}
               </td>
@@ -112,9 +112,9 @@ export function EnvironmentsPage() {
           open
           danger
           onOpenChange={(open) => !open && setDeleting(null)}
-          title={`Excluir ambiente ${deleting.key}?`}
-          description="Não é possível excluir ambientes em uso por conexões SDK ou features."
-          confirmLabel="Excluir"
+          title={`Delete environment ${deleting.key}?`}
+          description="Environments used by SDK connections or enabled features cannot be deleted."
+          confirmLabel="Delete"
           onConfirm={(reason) => remove.mutateAsync({ key: deleting.key, reason })}
         />
       )}

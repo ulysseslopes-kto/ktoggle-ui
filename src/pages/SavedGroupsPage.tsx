@@ -36,7 +36,7 @@ function SavedGroupDialog({ group, onClose }: { group: SavedGroup | 'new'; onClo
       const attribute = attributes.data?.find((a) => a.key === attributeKey)
       const parsed = parseValues(values, attribute)
       if (parsed.some((v) => typeof v === 'number' && Number.isNaN(v))) {
-        setLocalError('O atributo é numérico, mas há valores que não são números.')
+        setLocalError('The attribute is numeric, but some values are not numbers.')
         return
       }
       body = { ...common, attributeKey, values: parsed }
@@ -44,7 +44,7 @@ function SavedGroupDialog({ group, onClose }: { group: SavedGroup | 'new'; onClo
       try {
         body = { ...common, condition: JSON.parse(condition) as Json }
       } catch (err) {
-        setLocalError(`JSON inválido: ${err instanceof Error ? err.message : String(err)}`)
+        setLocalError(`Invalid JSON: ${err instanceof Error ? err.message : String(err)}`)
         return
       }
     }
@@ -57,48 +57,48 @@ function SavedGroupDialog({ group, onClose }: { group: SavedGroup | 'new'; onClo
     <Dialog
       open
       onOpenChange={(open) => !open && onClose()}
-      title={editing ? `Editar grupo ${editing.key}` : 'Novo grupo salvo'}
+      title={editing ? `Edit saved group ${editing.key}` : 'New saved group'}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" form="saved-group-form" loading={save.isPending} disabled={invalid}>Salvar</Button>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button type="submit" form="saved-group-form" loading={save.isPending} disabled={invalid}>Save</Button>
         </>
       }
     >
       <form id="saved-group-form" onSubmit={submit} className="space-y-4">
         {!editing && (
-          <Field label="Chave">
+          <Field label="Key">
             <Input value={key} onChange={(e) => setKey(e.target.value)} autoFocus />
           </Field>
         )}
-        <Field label="Nome">
+        <Field label="Name">
           <Input value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
-        <Field label="Descrição">
+        <Field label="Description">
           <Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
         </Field>
-        <Field label="Tipo" hint={editing ? 'O tipo não pode ser alterado após a criação.' : undefined}>
+        <Field label="Type" hint={editing ? 'The type cannot change after creation.' : undefined}>
           <Select value={type} disabled={Boolean(editing)} onChange={(e) => setType(e.target.value as SavedGroupType)}>
-            <option value="LIST">LIST — lista de valores de um atributo</option>
-            <option value="CONDITION">CONDITION — condição JSON</option>
+            <option value="LIST">LIST — list of values of an attribute</option>
+            <option value="CONDITION">CONDITION — JSON condition</option>
           </Select>
         </Field>
         {type === 'LIST' ? (
           <>
-            <Field label="Atributo">
+            <Field label="Attribute">
               <Select value={attributeKey} onChange={(e) => setAttributeKey(e.target.value)}>
-                <option value="">Selecione…</option>
+                <option value="">Select…</option>
                 {attributes.data?.filter((a) => !a.archived || a.key === attributeKey).map((a) => (
                   <option key={a.key} value={a.key}>{a.key} ({a.datatype})</option>
                 ))}
               </Select>
             </Field>
-            <Field label="Valores" hint="Um valor por linha. Números são enviados como número quando o atributo é NUMBER.">
+            <Field label="Values" hint="One value per line. Values are sent as numbers when the attribute is NUMBER.">
               <Textarea rows={8} value={values} onChange={(e) => setValues(e.target.value)} />
             </Field>
           </>
         ) : (
-          <Field label="Condição (JSON, sintaxe MongoDB-like do GrowthBook)">
+          <Field label="Condition (JSON, GrowthBook's MongoDB-like syntax)">
             <Textarea rows={8} value={condition} onChange={(e) => setCondition(e.target.value)} spellCheck={false} />
           </Field>
         )}
@@ -133,15 +133,15 @@ export function SavedGroupsPage() {
   return (
     <>
       <PageHeader
-        title="Grupos salvos"
-        subtitle="Listas de valores ou condições reutilizáveis nas regras das features."
-        actions={editor && <Button onClick={() => setEditing('new')}><Plus className="size-4" /> Novo grupo</Button>}
+        title="Saved groups"
+        subtitle="Reusable lists of values or conditions for feature rules."
+        actions={editor && <Button onClick={() => setEditing('new')}><Plus className="size-4" /> New saved group</Button>}
       />
       {groups.isLoading && <Spinner />}
       <ErrorBanner error={groups.error} />
-      {groups.data?.length === 0 && <EmptyState title="Nenhum grupo salvo" />}
+      {groups.data?.length === 0 && <EmptyState title="No saved groups yet" />}
       {groups.data && groups.data.length > 0 && (
-        <Table head={['Chave', 'Nome', 'Tipo', 'Conteúdo', '']}>
+        <Table head={['Key', 'Name', 'Type', 'Content', '']}>
           {groups.data.map((g) => (
             <tr key={g.key} className="hover:bg-surface">
               <td className="px-4 py-3"><Code value={g.key} /></td>
@@ -154,8 +154,8 @@ export function SavedGroupsPage() {
               <td className="px-4 py-3">
                 {editor && (
                   <div className="flex justify-end gap-1">
-                    <Button size="sm" variant="ghost" aria-label="Editar" onClick={() => setEditing(g)}><Pencil className="size-4" /></Button>
-                    <Button size="sm" variant="ghost" aria-label="Excluir" onClick={() => setDeleting(g)}><Trash2 className="size-4" /></Button>
+                    <Button size="sm" variant="ghost" aria-label="Edit" onClick={() => setEditing(g)}><Pencil className="size-4" /></Button>
+                    <Button size="sm" variant="ghost" aria-label="Delete" onClick={() => setDeleting(g)}><Trash2 className="size-4" /></Button>
                   </div>
                 )}
               </td>
@@ -169,9 +169,9 @@ export function SavedGroupsPage() {
           open
           danger
           onOpenChange={(open) => !open && setDeleting(null)}
-          title={`Excluir grupo ${deleting.key}?`}
-          description="Grupos referenciados por regras de features não podem ser excluídos."
-          confirmLabel="Excluir"
+          title={`Delete saved group ${deleting.key}?`}
+          description="Saved groups referenced by feature rules cannot be deleted."
+          confirmLabel="Delete"
           onConfirm={(reason) => remove.mutateAsync({ key: deleting.key, reason })}
         />
       )}

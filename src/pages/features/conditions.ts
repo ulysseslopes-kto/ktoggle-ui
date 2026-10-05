@@ -15,19 +15,19 @@ export interface Clause {
 }
 
 export const OPERATORS: { value: Operator; label: string; needsValue: boolean }[] = [
-  { value: 'eq', label: 'é igual a', needsValue: true },
-  { value: 'ne', label: 'é diferente de', needsValue: true },
-  { value: 'in', label: 'está em (lista)', needsValue: true },
-  { value: 'nin', label: 'não está em (lista)', needsValue: true },
+  { value: 'eq', label: 'equals', needsValue: true },
+  { value: 'ne', label: 'does not equal', needsValue: true },
+  { value: 'in', label: 'is in (list)', needsValue: true },
+  { value: 'nin', label: 'is not in (list)', needsValue: true },
   { value: 'gt', label: '>', needsValue: true },
   { value: 'gte', label: '≥', needsValue: true },
   { value: 'lt', label: '<', needsValue: true },
   { value: 'lte', label: '≤', needsValue: true },
-  { value: 'exists', label: 'existe', needsValue: false },
-  { value: 'notExists', label: 'não existe', needsValue: false },
-  { value: 'regex', label: 'casa com regex', needsValue: true },
-  { value: 'vgte', label: 'versão ≥', needsValue: true },
-  { value: 'vlt', label: 'versão <', needsValue: true },
+  { value: 'exists', label: 'exists', needsValue: false },
+  { value: 'notExists', label: 'does not exist', needsValue: false },
+  { value: 'regex', label: 'matches regex', needsValue: true },
+  { value: 'vgte', label: 'version ≥', needsValue: true },
+  { value: 'vlt', label: 'version <', needsValue: true },
 ]
 
 const MONGO: Partial<Record<Operator, string>> = {
@@ -120,15 +120,15 @@ export function parseCondition(condition: Json | null | undefined): Clause[] | n
   return clauses
 }
 
-/** Human-readable summary, e.g. "country é igual a BR E age ≥ 18". */
+/** Human-readable summary, e.g. "country equals BR AND age ≥ 18". */
 export function describeCondition(condition: Json | null | undefined): string {
   const clauses = parseCondition(condition)
   if (clauses === null) return JSON.stringify(condition)
-  if (clauses.length === 0) return 'Todos os usuários'
+  if (clauses.length === 0) return 'All users'
   return clauses
     .map((c) => {
       const op = OPERATORS.find((o) => o.value === c.operator)!
       return op.needsValue ? `${c.attribute} ${op.label} ${c.value}` : `${c.attribute} ${op.label}`
     })
-    .join(' E ')
+    .join(' AND ')
 }

@@ -3,11 +3,11 @@ import { login, logout, USERS } from './support'
 
 test('the login page carries the ktoggle identity', async ({ page }) => {
   await page.goto('/')
-  await expect(page).toHaveTitle('Entrar · ktoggle')
-  await expect(page.getByRole('heading', { name: 'Entrar' })).toBeVisible()
-  await expect(page.getByText('auditáveis')).toBeVisible()
-  await expect(page.getByLabel('Usuário')).toBeVisible()
-  await expect(page.getByLabel('Senha')).toBeVisible()
+  await expect(page).toHaveTitle('Sign in · ktoggle')
+  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
+  await expect(page.getByText('Auditable')).toBeVisible()
+  await expect(page.getByLabel('Username or email')).toBeVisible()
+  await expect(page.getByLabel('Password')).toBeVisible()
   await expect(page.getByText(/mobilt/i)).toHaveCount(0)
   await page.screenshot({ path: 'e2e-report/screens/login.png', fullPage: true })
 })
@@ -17,7 +17,7 @@ test('wrong password is rejected with a clear message', async ({ page }) => {
   await page.locator('#username').fill(USERS.editor.username)
   await page.locator('#password').fill('wrong')
   await page.locator('#kc-login').click()
-  await expect(page.getByText('Usuário ou senha inválidos.')).toBeVisible()
+  await expect(page.getByText('Invalid username or password.')).toBeVisible()
 })
 
 test('signing in lands on the feature list and signing out returns to the login', async ({ page }) => {
@@ -31,8 +31,8 @@ test('signing in lands on the feature list and signing out returns to the login'
 
 test('viewers can read but not change anything', async ({ page }) => {
   await login(page, USERS.viewer)
-  await expect(page.getByRole('button', { name: 'Nova feature' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'New feature' })).toHaveCount(0)
   await page.getByText('new-checkout').click()
-  await expect(page.getByRole('button', { name: 'Novo draft' })).toHaveCount(0)
-  await expect(page.getByRole('button', { name: 'Adicionar regra' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'New draft' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Add rule' })).toHaveCount(0)
 })

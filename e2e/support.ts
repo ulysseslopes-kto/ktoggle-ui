@@ -25,7 +25,7 @@ export async function login(page: Page, user: User, path = '/features') {
 
 export async function logout(page: Page) {
   await page.keyboard.press('Escape')
-  await page.getByRole('button', { name: 'Sair' }).click()
+  await page.getByRole('button', { name: 'Sign out' }).click()
   await expect(page.locator('#kc-login')).toBeVisible()
 }
 
@@ -41,7 +41,7 @@ export async function token(request: APIRequestContext, user: User): Promise<str
 export async function createFeature(request: APIRequestContext, key: string): Promise<void> {
   const response = await request.post(`${API}/admin/v1/features`, {
     headers: { Authorization: `Bearer ${await token(request, USERS.editor)}` },
-    data: { key, valueType: 'BOOLEAN', defaultValue: false, description: 'Criada pelos testes e2e', tags: ['e2e'] },
+    data: { key, valueType: 'BOOLEAN', defaultValue: false, description: 'Created by the e2e tests', tags: ['e2e'] },
   })
   expect(response.status()).toBe(201)
 }

@@ -28,26 +28,26 @@ function ProjectDialog({ project, onClose }: { project: Project | 'new'; onClose
     <Dialog
       open
       onOpenChange={(open) => !open && onClose()}
-      title={editing ? `Editar projeto ${editing.key}` : 'Novo projeto'}
+      title={editing ? `Edit project ${editing.key}` : 'New project'}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
           <Button type="submit" form="project-form" loading={save.isPending} disabled={!name.trim() || (!editing && !key.trim())}>
-            Salvar
+            Save
           </Button>
         </>
       }
     >
       <form id="project-form" onSubmit={submit} className="space-y-4">
         {!editing && (
-          <Field label="Chave" hint="Identificador imutável, ex.: sportsbook">
+          <Field label="Key" hint="Immutable identifier, e.g. sportsbook">
             <Input value={key} onChange={(e) => setKey(e.target.value)} autoFocus />
           </Field>
         )}
-        <Field label="Nome">
+        <Field label="Name">
           <Input value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
-        <Field label="Descrição">
+        <Field label="Description">
           <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
         </Field>
         <ErrorBanner error={save.error} />
@@ -67,15 +67,15 @@ export function ProjectsPage() {
   return (
     <>
       <PageHeader
-        title="Projetos"
-        subtitle="Agrupam features e limitam o que cada conexão SDK recebe."
-        actions={admin && <Button onClick={() => setEditing('new')}><Plus className="size-4" /> Novo projeto</Button>}
+        title="Projects"
+        subtitle="Group features and limit what each SDK connection receives."
+        actions={admin && <Button onClick={() => setEditing('new')}><Plus className="size-4" /> New project</Button>}
       />
       {projects.isLoading && <Spinner />}
       <ErrorBanner error={projects.error} />
-      {projects.data?.length === 0 && <EmptyState title="Nenhum projeto cadastrado" />}
+      {projects.data?.length === 0 && <EmptyState title="No projects yet" />}
       {projects.data && projects.data.length > 0 && (
-        <Table head={['Chave', 'Nome', 'Descrição', 'Atualizado', '']}>
+        <Table head={['Key', 'Name', 'Description', 'Updated', '']}>
           {projects.data.map((p) => (
             <tr key={p.key} className="hover:bg-surface">
               <td className="px-4 py-3"><Code value={p.key} /></td>
@@ -85,8 +85,8 @@ export function ProjectsPage() {
               <td className="px-4 py-3">
                 {admin && (
                   <div className="flex justify-end gap-1">
-                    <Button size="sm" variant="ghost" aria-label="Editar" onClick={() => setEditing(p)}><Pencil className="size-4" /></Button>
-                    <Button size="sm" variant="ghost" aria-label="Excluir" onClick={() => setDeleting(p)}><Trash2 className="size-4" /></Button>
+                    <Button size="sm" variant="ghost" aria-label="Edit" onClick={() => setEditing(p)}><Pencil className="size-4" /></Button>
+                    <Button size="sm" variant="ghost" aria-label="Delete" onClick={() => setDeleting(p)}><Trash2 className="size-4" /></Button>
                   </div>
                 )}
               </td>
@@ -100,9 +100,9 @@ export function ProjectsPage() {
           open
           danger
           onOpenChange={(open) => !open && setDeleting(null)}
-          title={`Excluir projeto ${deleting.key}?`}
-          description="Não é possível excluir projetos em uso por features ou conexões SDK."
-          confirmLabel="Excluir"
+          title={`Delete project ${deleting.key}?`}
+          description="Projects used by features or SDK connections cannot be deleted."
+          confirmLabel="Delete"
           onConfirm={(reason) => remove.mutateAsync({ key: deleting.key, reason })}
         />
       )}

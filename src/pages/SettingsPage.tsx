@@ -19,13 +19,13 @@ export function SettingsPage() {
   return (
     <>
       <PageHeader
-        title="Configurações"
-        subtitle="Revisão e aprovação: quem aprova drafts e quais ambientes exigem aprovação antes da publicação."
+        title="Settings"
+        subtitle="Review & approval: who approves drafts and which environments require approval before publishing."
       />
       <div className="space-y-6">
         {settings.isLoading ? <Spinner /> : settings.data && <ApproversCard settings={settings.data} editable={admin} />}
         <ErrorBanner error={settings.error} />
-        <Card title="Ambientes que exigem aprovação">
+        <Card title="Environments that require approval">
           {environments.isLoading && <Spinner />}
           <ul className="divide-y divide-line">
             {environments.data?.map((env) => <EnvironmentRow key={env.key} environment={env} editable={admin} />)}
@@ -45,22 +45,22 @@ function ApproversCard({ settings, editable }: { settings: ReviewSettings; edita
 
   return (
     <Card
-      title="Quem pode aprovar drafts"
-      actions={<span className="text-xs text-muted">atualizado por {settings.updatedBy} · {formatDate(settings.updatedAt)}</span>}
+      title="Who can approve drafts"
+      actions={<span className="text-xs text-muted">updated by {settings.updatedBy} · {formatDate(settings.updatedAt)}</span>}
     >
       <div className="space-y-6">
         <div className="grid gap-6 md:grid-cols-2">
           <ChipInput
-            label="Papéis (Keycloak) aprovadores"
+            label="Approver roles (Keycloak)"
             values={draft.approverRoles}
             suggestions={ROLE_SUGGESTIONS}
             editable={editable}
             onChange={(approverRoles) => setDraft({ ...draft, approverRoles })}
           />
           <ChipInput
-            label="Usuários aprovadores"
+            label="Approver users"
             values={draft.approverUsers}
-            placeholder="username do Keycloak"
+            placeholder="Keycloak username"
             editable={editable}
             onChange={(approverUsers) => setDraft({ ...draft, approverUsers })}
           />
@@ -71,32 +71,32 @@ function ApproversCard({ settings, editable }: { settings: ReviewSettings; edita
             checked={draft.allowSelfApproval}
             editable={editable}
             onChange={(allowSelfApproval) => setDraft({ ...draft, allowSelfApproval })}
-            title="Permitir que o autor aprove o próprio draft"
-            description="Desliga a regra dos quatro olhos: quem criou o draft pode aprová-lo e publicá-lo sozinho."
-            warning={draft.allowSelfApproval ? 'Com esta opção ligada, uma única pessoa pode alterar ambientes protegidos.' : undefined}
+            title="Allow authors to approve their own drafts"
+            description="Turns off the four-eyes rule: whoever created the draft can approve and publish it alone."
+            warning={draft.allowSelfApproval ? 'With this on, a single person can change protected environments.' : undefined}
           />
           <Switch
             checked={draft.resetReviewOnChange}
             editable={editable}
             onChange={(resetReviewOnChange) => setDraft({ ...draft, resetReviewOnChange })}
-            title="Alterar um draft aprovado exige nova aprovação"
-            description="Evita publicar algo diferente do que foi aprovado."
+            title="Changing an approved draft requires a new approval"
+            description="Prevents publishing something different from what was approved."
           />
           <Switch
             checked={draft.bypassEnabled}
             editable={editable}
             onChange={(bypassEnabled) => setDraft({ ...draft, bypassEnabled })}
-            title="Publicação de emergência por admins"
-            description="Admins podem publicar sem aprovação em incidentes. O motivo é obrigatório e a ação fica destacada na auditoria."
+            title="Emergency publication by admins"
+            description="Admins can publish without approval during incidents. A reason is required and the action is flagged in the audit trail."
           />
         </div>
 
         <ErrorBanner error={save.error} />
         {editable && (
           <div className="flex items-center justify-end gap-3">
-            {empty && <span className="text-xs text-kto-red">Informe ao menos um papel ou usuário aprovador.</span>}
-            <Button variant="ghost" disabled={!dirty} onClick={() => setDraft(settings)}>Descartar</Button>
-            <Button disabled={!dirty || empty} loading={save.isPending} onClick={() => save.mutate(draft)}>Salvar</Button>
+            {empty && <span className="text-xs text-kto-red">Add at least one approver role or user.</span>}
+            <Button variant="ghost" disabled={!dirty} onClick={() => setDraft(settings)}>Discard</Button>
+            <Button disabled={!dirty || empty} loading={save.isPending} onClick={() => save.mutate(draft)}>Save</Button>
           </div>
         )}
       </div>
@@ -111,16 +111,16 @@ function EnvironmentRow({ environment, editable }: { environment: Environment; e
       <div>
         <p className="text-sm font-semibold">{environment.name} <span className="font-mono text-xs text-muted">{environment.key}</span></p>
         <p className="text-xs text-muted">
-          {environment.requiresReview ? 'Publicação exige aprovação de outra pessoa.' : 'O autor do draft pode publicar diretamente.'}
+          {environment.requiresReview ? 'Publishing requires approval from someone else.' : 'The draft author can publish directly.'}
         </p>
         <ErrorBanner error={save.error} />
       </div>
       <div className="flex items-center gap-3">
-        {environment.requiresReview && <Badge tone="yellow">exige aprovação</Badge>}
+        {environment.requiresReview && <Badge tone="yellow">requires approval</Badge>}
         <Toggle
           checked={environment.requiresReview}
           disabled={!editable || save.isPending}
-          label={`Exigir aprovação em ${environment.key}`}
+          label={`Require approval in ${environment.key}`}
           onChange={(requiresReview) => save.mutate({
             key: environment.key,
             body: { name: environment.name, description: environment.description, sortOrder: environment.sortOrder, requiresReview, version: environment.version },
@@ -169,12 +169,12 @@ function ChipInput({ label, values, onChange, editable, suggestions = [], placeh
     <div className="space-y-2">
       <p className="text-xs font-semibold uppercase tracking-wide text-soft">{label}</p>
       <div className="flex min-h-10 flex-wrap gap-1.5">
-        {values.length === 0 && <span className="text-sm text-muted">nenhum</span>}
+        {values.length === 0 && <span className="text-sm text-muted">none</span>}
         {values.map((v) => (
           <span key={v} className="inline-flex items-center gap-1 rounded bg-surface-2 px-2 py-1 font-mono text-xs">
             {v}
             {editable && (
-              <button type="button" aria-label={`Remover ${v}`} className="text-muted hover:text-kto-red"
+              <button type="button" aria-label={`Remove ${v}`} className="text-muted hover:text-kto-red"
                 onClick={() => onChange(values.filter((x) => x !== v))}>
                 <X className="size-3" />
               </button>
@@ -186,7 +186,7 @@ function ChipInput({ label, values, onChange, editable, suggestions = [], placeh
         <>
           <Input
             value={text}
-            placeholder={placeholder ?? 'adicionar e pressionar Enter'}
+            placeholder={placeholder ?? 'type and press Enter'}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {

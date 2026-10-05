@@ -27,15 +27,15 @@ const FLASH_MS = 1500
 
 function parseAttributes(text: string): Record<string, unknown> {
   const value: unknown = JSON.parse(text || '{}')
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error('Os atributos devem ser um objeto JSON.')
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error('Attributes must be a JSON object.')
   return value as Record<string, unknown>
 }
 
 const STATUS_BADGE: Record<Status, { tone: 'neutral' | 'yellow' | 'green' | 'red'; label: string }> = {
-  idle: { tone: 'neutral', label: 'Desconectado' },
-  connecting: { tone: 'yellow', label: 'Conectando…' },
-  connected: { tone: 'green', label: 'Conectado · SSE ativo' },
-  error: { tone: 'red', label: 'Erro' },
+  idle: { tone: 'neutral', label: 'Disconnected' },
+  connecting: { tone: 'yellow', label: 'Connecting…' },
+  connected: { tone: 'green', label: 'Connected · SSE live' },
+  error: { tone: 'red', label: 'Error' },
 }
 
 export function PlaygroundPage() {
@@ -78,7 +78,7 @@ export function PlaygroundPage() {
           changed.push(row.key)
           addLog(
             before === undefined
-              ? `${row.key}: nova feature (${JSON.stringify(row.value)})`
+              ? `${row.key}: new feature (${JSON.stringify(row.value)})`
               : `${row.key}: ${JSON.stringify(JSON.parse(before)[0])} → ${JSON.stringify(row.value)}`,
           )
         }
@@ -87,7 +87,7 @@ export function PlaygroundPage() {
     previous.current.forEach((_, key) => {
       if (!seen.has(key)) {
         previous.current.delete(key)
-        if (!initialRead.current) addLog(`${key}: removida do payload`)
+        if (!initialRead.current) addLog(`${key}: removed from the payload`)
       }
     })
     initialRead.current = false
@@ -132,15 +132,15 @@ export function PlaygroundPage() {
     gbRef.current = gb
     gb.subscribe(() => {
       if (gbRef.current !== gb) return
-      addLog('Atualização recebida do servidor')
+      addLog('Update received from the server')
       refresh()
     })
     try {
       const response = await gb.init({ streaming: true })
       if (gbRef.current !== gb) return
-      if (!response.success) throw response.error ?? new Error('Falha ao carregar as features')
+      if (!response.success) throw response.error ?? new Error('Failed to load the features')
       setStatus('connected')
-      addLog(`Conectado a ${clientKey}`)
+      addLog(`Connected to ${clientKey}`)
       refresh()
     } catch (e) {
       if (gbRef.current !== gb) return
@@ -157,7 +157,7 @@ export function PlaygroundPage() {
     try {
       await gb.setAttributes(parseAttributes(attributesText))
       setError(null)
-      addLog('Atributos atualizados')
+      addLog('Attributes updated')
       refresh()
     } catch (e) {
       setError(e)
@@ -181,33 +181,33 @@ export function PlaygroundPage() {
     <>
       <PageHeader
         title="Playground"
-        subtitle="Conecta um SDK real (@growthbook/growthbook) a uma conexão e mostra as features avaliadas ao vivo."
+        subtitle="Connects a real SDK (@growthbook/growthbook) to a connection and shows the evaluated features live."
         actions={<Badge tone={badge.tone} className="px-2.5 py-1 text-xs">{badge.label}</Badge>}
       />
       <div className="mb-4 rounded-md border border-line bg-surface px-4 py-3 text-sm text-soft">
-        Dica: abra a página de Features em outra aba e altere uma flag para ver a mudança chegar via SSE.
+        Tip: open Features in another tab and publish a change to watch it arrive over SSE.
       </div>
       <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
-        <Card title="Conexão">
+        <Card title="Connection">
           <div className="space-y-4">
-            <Field label="Conexão SDK">
+            <Field label="SDK connection">
               <Select value={clientKey} onChange={(e) => setClientKey(e.target.value)} disabled={connected || busy}>
-                <option value="">Selecione…</option>
+                <option value="">Select…</option>
                 {connections.data?.map((c) => <option key={c.clientKey} value={c.clientKey}>{c.name} ({c.environmentKey})</option>)}
               </Select>
             </Field>
-            <Field label="Atributos (JSON)">
+            <Field label="Attributes (JSON)">
               <Textarea rows={6} value={attributesText} onChange={(e) => setAttributesText(e.target.value)} spellCheck={false} />
             </Field>
             <div className="flex flex-wrap gap-2">
               {!connected ? (
                 <Button onClick={connect} loading={busy} disabled={!clientKey}>
-                  <PlugZap className="size-4" /> Conectar
+                  <PlugZap className="size-4" /> Connect
                 </Button>
               ) : (
                 <>
-                  <Button variant="secondary" onClick={applyAttributes}><RefreshCw className="size-4" /> Atualizar atributos</Button>
-                  <Button variant="danger" onClick={disconnect}><Plug className="size-4" /> Desconectar</Button>
+                  <Button variant="secondary" onClick={applyAttributes}><RefreshCw className="size-4" /> Update attributes</Button>
+                  <Button variant="danger" onClick={disconnect}><Plug className="size-4" /> Disconnect</Button>
                 </>
               )}
             </div>
@@ -215,11 +215,11 @@ export function PlaygroundPage() {
           </div>
         </Card>
         <div className="min-w-0 space-y-6">
-          <Card title={`Features avaliadas${connected ? ` (${rows.length})` : ''}`}>
-            {!connected && <EmptyState title="Conecte para ver as features">O payload é carregado e mantido em tempo real por SSE.</EmptyState>}
-            {connected && rows.length === 0 && <EmptyState title="O payload não tem features" />}
+          <Card title={`Evaluated features${connected ? ` (${rows.length})` : ''}`}>
+            {!connected && <EmptyState title="Connect to see the features">The payload is loaded and kept up to date over SSE.</EmptyState>}
+            {connected && rows.length === 0 && <EmptyState title="The payload has no features" />}
             {connected && rows.length > 0 && (
-              <Table head={['Feature', 'Valor', 'Source', 'Regra']}>
+              <Table head={['Feature', 'Value', 'Source', 'Rule']}>
                 {rows.map((r) => (
                   <tr key={r.key} className={clsx('transition-colors duration-700', flashing[r.key] ? 'bg-kto-red/30' : 'bg-transparent')}>
                     <td className="px-4 py-3 font-mono text-xs">{r.key}</td>
@@ -231,9 +231,9 @@ export function PlaygroundPage() {
               </Table>
             )}
           </Card>
-          <Card title="Log de eventos">
+          <Card title="Event log">
             {log.length === 0 ? (
-              <p className="text-sm text-muted">Sem eventos ainda.</p>
+              <p className="text-sm text-muted">No events yet.</p>
             ) : (
               <ul className="max-h-72 space-y-1 overflow-auto font-mono text-xs">
                 {log.map((entry, i) => (

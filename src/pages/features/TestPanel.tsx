@@ -34,22 +34,22 @@ export function TestPanel({ featureKey, environments, proposed }: {
   const result = simulate.data
 
   return (
-    <Card title={<span className="flex items-center gap-2"><FlaskConical className="size-4 text-kto-red" /> Testar feature</span>}>
+    <Card title={<span className="flex items-center gap-2"><FlaskConical className="size-4 text-kto-red" /> Test feature</span>}>
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="space-y-3">
-          <Field label="Ambiente">
+          <Field label="Environment">
             <Select value={environmentKey} onChange={(e) => setEnvironmentKey(e.target.value)}>
               {environments.map((env) => (
                 <option key={env.key} value={env.key}>{env.name}</option>
               ))}
             </Select>
           </Field>
-          <Field label="Atributos do usuário (JSON)" error={parseError ? 'JSON inválido' : null}>
+          <Field label="User attributes (JSON)" error={parseError ? 'Invalid JSON' : null}>
             <Textarea rows={6} value={attributes} onChange={(e) => setAttributes(e.target.value)} spellCheck={false} />
           </Field>
           <div className="flex items-center gap-3">
-            <Button onClick={run} loading={simulate.isPending}>Avaliar</Button>
-            {draft && <Badge tone="yellow">avaliando o draft (não publicado)</Badge>}
+            <Button onClick={run} loading={simulate.isPending}>Evaluate</Button>
+            {draft && <Badge tone="yellow">evaluating the draft (unpublished)</Badge>}
           </div>
         </div>
         <div className="space-y-3">
@@ -57,11 +57,11 @@ export function TestPanel({ featureKey, environments, proposed }: {
           {result ? (
             <>
               <div className="rounded-lg border border-line bg-ink p-4">
-                <p className="text-xs uppercase tracking-wide text-muted">Valor avaliado</p>
+                <p className="text-xs uppercase tracking-wide text-muted">Evaluated value</p>
                 <div className="mt-2 text-lg"><ValueChip value={result.value} /></div>
                 <p className="mt-2 text-xs text-muted">
-                  origem <span className="font-mono text-soft">{result.source}</span>
-                  {result.ruleId && <> · regra <span className="font-mono text-soft">{result.ruleId}</span></>}
+                  source <span className="font-mono text-soft">{result.source}</span>
+                  {result.ruleId && <> · rule <span className="font-mono text-soft">{result.ruleId}</span></>}
                 </p>
               </div>
               {result.trace.length > 0 && (
@@ -77,16 +77,16 @@ export function TestPanel({ featureKey, environments, proposed }: {
                         <Badge>{t.type}</Badge>
                       </span>
                       <span className="text-xs text-muted">
-                        {t.selected ? 'aplicada' : t.conditionMatched ? 'condição ok, fora do rollout' : 'condição não atendida'}
+                        {t.selected ? 'applied' : t.conditionMatched ? 'condition met, outside the rollout' : 'condition not met'}
                       </span>
                     </li>
                   ))}
                 </ol>
               )}
-              <p className="text-[0.6875rem] text-kto-grey">Avaliado com {result.evaluator}, o mesmo SDK usado em produção.</p>
+              <p className="text-[0.6875rem] text-kto-grey">Evaluated with {result.evaluator}, the same SDK used in production.</p>
             </>
           ) : (
-            <p className="text-sm text-muted">Informe os atributos e clique em Avaliar.</p>
+            <p className="text-sm text-muted">Enter the attributes and click Evaluate.</p>
           )}
         </div>
       </div>

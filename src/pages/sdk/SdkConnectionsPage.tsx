@@ -41,35 +41,35 @@ function CreateDialog({ onClose }: { onClose: () => void }) {
     <Dialog
       open
       onOpenChange={(open) => !open && onClose()}
-      title="Nova conexão SDK"
+      title="New SDK connection"
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button type="submit" form="sdk-form" loading={save.isPending} disabled={!name.trim() || !environmentKey}>Criar</Button>
+          <Button variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button type="submit" form="sdk-form" loading={save.isPending} disabled={!name.trim() || !environmentKey}>Create</Button>
         </>
       }
     >
       <form id="sdk-form" onSubmit={submit} className="space-y-4">
-        <Field label="Nome">
-          <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus placeholder="ex.: app-mobile-android" />
+        <Field label="Name">
+          <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus placeholder="e.g. app-mobile-android" />
         </Field>
-        <Field label="Ambiente">
+        <Field label="Environment">
           <Select value={environmentKey} onChange={(e) => setEnvironmentKey(e.target.value)}>
-            <option value="">Selecione…</option>
+            <option value="">Select…</option>
             {environments.data?.map((env) => <option key={env.key} value={env.key}>{env.name} ({env.key})</option>)}
           </Select>
         </Field>
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wide text-soft">Projetos (opcional)</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-soft">Projects (optional)</span>
           <div className="flex flex-wrap gap-x-5 gap-y-2 rounded-md border border-surface-3 bg-ink p-3">
-            {projects.data?.length === 0 && <span className="text-xs text-muted">Nenhum projeto cadastrado.</span>}
+            {projects.data?.length === 0 && <span className="text-xs text-muted">No projects yet.</span>}
             {projects.data?.map((p) => (
               <Checkbox key={p.key} label={p.name} checked={projectKeys.includes(p.key)} onChange={(on) => toggleProject(p.key, on)} />
             ))}
           </div>
-          <span className="text-xs text-muted">Sem projetos selecionados, a conexão recebe features de todos os projetos.</span>
+          <span className="text-xs text-muted">With no projects selected, the connection receives features from every project.</span>
         </div>
-        <Field label="Client key (avançado)" hint="Deixe vazio para gerar.">
+        <Field label="Client key (advanced)" hint="Leave empty to generate one.">
           <Input value={clientKey} onChange={(e) => setClientKey(e.target.value)} />
         </Field>
         <ErrorBanner error={save.error} />
@@ -86,15 +86,15 @@ export function SdkConnectionsPage() {
   return (
     <>
       <PageHeader
-        title="Conexões SDK"
-        subtitle="Cada conexão entrega um bundle assinado de um ambiente para os SDKs, via client key."
-        actions={can('ktoggle-admin') && <Button onClick={() => setCreating(true)}><Plus className="size-4" /> Nova conexão</Button>}
+        title="SDK connections"
+        subtitle="Each connection delivers an environment's signed bundle to SDKs, by client key."
+        actions={can('ktoggle-admin') && <Button onClick={() => setCreating(true)}><Plus className="size-4" /> New connection</Button>}
       />
       {connections.isLoading && <Spinner />}
       <ErrorBanner error={connections.error} />
-      {connections.data?.length === 0 && <EmptyState title="Nenhuma conexão SDK" />}
+      {connections.data?.length === 0 && <EmptyState title="No SDK connections yet" />}
       {connections.data && connections.data.length > 0 && (
-        <Table head={['Nome', 'Client key', 'Ambiente', 'Projetos', '']}>
+        <Table head={['Name', 'Client key', 'Environment', 'Projects', '']}>
           {connections.data.map((c) => (
             <tr key={c.clientKey} className="hover:bg-surface">
               <td className="px-4 py-3">
@@ -104,7 +104,7 @@ export function SdkConnectionsPage() {
               <td className="px-4 py-3"><Badge tone="outline">{c.environmentKey}</Badge></td>
               <td className="px-4 py-3">
                 {c.projectKeys.length === 0 ? (
-                  <span className="text-muted">todos</span>
+                  <span className="text-muted">all</span>
                 ) : (
                   <div className="flex flex-wrap gap-1">{c.projectKeys.map((p) => <Badge key={p}>{p}</Badge>)}</div>
                 )}

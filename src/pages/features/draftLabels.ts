@@ -1,12 +1,12 @@
 import type { DraftEventType, DraftStatus } from '@/api/types'
 
 export const STATUS_LABEL: Record<DraftStatus, string> = {
-  DRAFT: 'Rascunho',
-  PENDING_REVIEW: 'Aguardando revisão',
-  CHANGES_REQUESTED: 'Alterações solicitadas',
-  APPROVED: 'Aprovado',
-  PUBLISHED: 'Publicado',
-  DISCARDED: 'Descartado',
+  DRAFT: 'Draft',
+  PENDING_REVIEW: 'Pending review',
+  CHANGES_REQUESTED: 'Changes requested',
+  APPROVED: 'Approved',
+  PUBLISHED: 'Published',
+  DISCARDED: 'Discarded',
 }
 
 export const STATUS_TONE: Record<DraftStatus, 'neutral' | 'yellow' | 'red' | 'green' | 'outline'> = {
@@ -19,28 +19,28 @@ export const STATUS_TONE: Record<DraftStatus, 'neutral' | 'yellow' | 'red' | 'gr
 }
 
 export const EVENT_LABEL: Record<DraftEventType, string> = {
-  CREATED: 'criou o draft',
-  UPDATED: 'alterou',
-  REVIEW_REQUESTED: 'pediu revisão',
-  APPROVED: 'aprovou',
-  CHANGES_REQUESTED: 'solicitou alterações',
-  REVIEW_RESET: 'a aprovação foi invalidada',
-  COMMENTED: 'comentou',
-  REBASED: 'atualizou com a versão no ar',
-  PUBLISHED: 'publicou',
-  BYPASS_PUBLISHED: 'publicou SEM APROVAÇÃO (emergência)',
-  DISCARDED: 'descartou',
+  CREATED: 'created the draft',
+  UPDATED: 'changed',
+  REVIEW_REQUESTED: 'requested a review',
+  APPROVED: 'approved',
+  CHANGES_REQUESTED: 'requested changes',
+  REVIEW_RESET: 'approval was reset',
+  COMMENTED: 'commented',
+  REBASED: 'updated with the live version',
+  PUBLISHED: 'published',
+  BYPASS_PUBLISHED: 'published WITHOUT APPROVAL (emergency)',
+  DISCARDED: 'discarded',
 }
 
 const FIELD_LABEL: Record<string, string> = {
-  defaultValue: 'Valor padrão',
-  projectKey: 'Projeto',
-  description: 'Descrição',
-  owner: 'Responsável',
+  defaultValue: 'Default value',
+  projectKey: 'Project',
+  description: 'Description',
+  owner: 'Owner',
   tags: 'Tags',
-  archived: 'Arquivada',
+  archived: 'Archived',
 }
 
 export function sectionLabel(section: string): string {
-  return section.startsWith('environments.') ? `Ambiente ${section.slice('environments.'.length)}` : FIELD_LABEL[section] ?? section
+  return section.startsWith('environments.') ? `Environment ${section.slice('environments.'.length)}` : FIELD_LABEL[section] ?? section
 }

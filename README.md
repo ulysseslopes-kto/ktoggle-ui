@@ -1,44 +1,54 @@
 # ktoggle-ui
 
-Interface administrativa do **ktoggle**, o serviço de feature flags da KTO. O layout segue o do GrowthBook e usa a
-identidade visual da KTO (preto, vermelho e branco).
+Admin UI for **ktoggle**, KTO's feature flag service. The layout follows GrowthBook's, with KTO's visual identity
+(black, red and white).
 
 Stack: React 19, Vite, TypeScript (strict), Tailwind 4, TanStack Query, React Router, Radix, Keycloak (OIDC + PKCE).
 
-## Rodando
+## Running it
 
-Pré-requisito: o backend `ktoggle` rodando localmente (veja o README dele: `docker compose up -d` e o backend com os
-perfis `local,demo`).
+The simplest way is the one-command demo in the `ktoggle` repository (`docker compose --profile app up -d --build`),
+which also builds and serves this UI. For development, run the `ktoggle` backend locally (see its README) and then:
 
 ```bash
 npm install
 npm run dev          # http://localhost:5173
 ```
 
-Usuários de desenvolvimento (Keycloak local, realm `ktoggle`): `admin.local/admin`, `editor.local/editor`,
+Development users (local Keycloak, realm `ktoggle`): `admin.local/admin`, `editor.local/editor`,
 `approver.local/approver`, `viewer.local/viewer`.
 
-| Variável | Padrão |
+| Variable | Default |
 |---|---|
 | `VITE_API_URL` | `http://localhost:8090` |
 | `VITE_KEYCLOAK_URL` | `http://localhost:8180` |
 | `VITE_KEYCLOAK_REALM` | `ktoggle` |
 | `VITE_KEYCLOAK_CLIENT_ID` | `ktoggle-ui` |
 
-## Telas
+## Screens
 
-- **Features:** lista com um toggle por ambiente; o detalhe tem regras force e rollout em rascunho, publicação com
-  motivo, teste com o SDK oficial e histórico de revisões com restauração.
-- **Saved groups, Atributos, Ambientes, Projetos, Conexões de SDK:** cadastros. A tela de conexões mostra snippets de
-  uso, o bundle ativo, a verificação da cadeia, o rollback e o log de entregas.
-- **Audit log:** a trilha encadeada por hash, com indicador de integridade e diff entre antes e depois.
-- **Replay:** reproduz uma decisão passada a partir de um bundle imutável, ou do bundle ativo num instante.
-- **Decisões:** eventos opt-in enviados pelos SDKs, com verificação de atributos por HMAC.
-- **SDK playground:** um SDK real (`@growthbook/growthbook`) conectado via SSE. Altere uma flag em outra aba e veja a
-  mudança chegar ao vivo.
+- **Features:** a list with a toggle per environment. The detail page has:
+  - force and rollout rules with a visual condition builder;
+  - a test panel backed by the official SDK;
+  - revision history with revert.
+- **Drafts and reviews:**
+  - every change is staged in a draft;
+  - "Review & publish" shows a side-by-side diff, conflicts and rebase, approvals and emergency publication;
+  - a review queue;
+  - approval settings.
+- **Saved groups, Attributes, Environments, Projects, SDK connections:** catalog pages. The connection page shows
+  usage snippets, the active bundle, chain verification, rollback and the delivery log.
+- **Audit log:** the hash-chained trail, with an integrity indicator and a before/after diff.
+- **Replay:** reproduces a past decision from an immutable bundle, or from the bundle active at a given instant.
+- **Decisions:** opt-in events sent by SDKs, with HMAC-based attribute verification.
+- **SDK playground:** a real SDK (`@growthbook/growthbook`) connected over SSE. Publish a change in another tab and
+  watch it arrive live.
 
 ## Scripts
 
-`npm run build` (typecheck + build de produção) · `npm test` (Vitest) · `npm run lint` (oxlint) ·
-`npm run test:e2e` (Playwright, contra a stack local subida com `docker compose --profile app up -d --build` no repositório
-ktoggle; screenshots em `e2e-report/screens`)
+- `npm run build`: typecheck and production build.
+- `npm test`: unit tests (Vitest).
+- `npm run lint`: oxlint.
+- `npm run test:e2e`: end-to-end tests (Playwright). They run against the local stack started with
+  `docker compose --profile app up -d --build` in the ktoggle repository, and save screenshots in
+  `e2e-report/screens`.

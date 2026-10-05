@@ -8,12 +8,12 @@ import { Badge, EmptyState, ErrorBanner, formatDate, PageHeader, Spinner, Table 
 import { STATUS_LABEL, STATUS_TONE } from './features/draftLabels'
 
 const TABS: { label: string; statuses: DraftStatus[] }[] = [
-  { label: 'Aguardando revisão', statuses: ['PENDING_REVIEW'] },
-  { label: 'Aprovados', statuses: ['APPROVED'] },
-  { label: 'Alterações solicitadas', statuses: ['CHANGES_REQUESTED'] },
-  { label: 'Rascunhos', statuses: ['DRAFT'] },
-  { label: 'Todos abertos', statuses: ['DRAFT', 'PENDING_REVIEW', 'CHANGES_REQUESTED', 'APPROVED'] },
-  { label: 'Publicados', statuses: ['PUBLISHED'] },
+  { label: 'Pending review', statuses: ['PENDING_REVIEW'] },
+  { label: 'Approved', statuses: ['APPROVED'] },
+  { label: 'Changes requested', statuses: ['CHANGES_REQUESTED'] },
+  { label: 'Drafts', statuses: ['DRAFT'] },
+  { label: 'All open', statuses: ['DRAFT', 'PENDING_REVIEW', 'CHANGES_REQUESTED', 'APPROVED'] },
+  { label: 'Published', statuses: ['PUBLISHED'] },
 ]
 
 /** Review queue: every draft by status, with the ones the current user can review highlighted. */
@@ -26,8 +26,8 @@ export function ReviewsPage() {
   return (
     <>
       <PageHeader
-        title="Revisões"
-        subtitle="Toda alteração em uma feature passa por um draft. Ambientes protegidos exigem a aprovação de outra pessoa antes da publicação."
+        title="Reviews"
+        subtitle="Every change to a feature goes through a draft. Protected environments require approval from someone else before publishing."
       />
       <div className="mb-4 flex flex-wrap gap-1 border-b border-line">
         {TABS.map((t, i) => (
@@ -48,9 +48,9 @@ export function ReviewsPage() {
       {drafts.isLoading ? (
         <Spinner />
       ) : !drafts.data?.length ? (
-        <EmptyState title="Nada por aqui">Nenhum draft com este status.</EmptyState>
+        <EmptyState title="Nothing here">No drafts with this status.</EmptyState>
       ) : (
-        <Table head={['Feature', 'Draft', 'Status', 'Autor', 'Base', 'Atualizado']}>
+        <Table head={['Feature', 'Draft', 'Status', 'Author', 'Base', 'Updated']}>
           {drafts.data.map((d) => {
             const reviewable = mayReview && d.status === 'PENDING_REVIEW' && d.createdBy !== user.username
             return (
@@ -64,8 +64,8 @@ export function ReviewsPage() {
                   </Link>
                 </td>
                 <td className="px-4 py-3 text-sm">
-                  {d.title ?? <span className="text-muted">sem título</span>}
-                  {reviewable && <span className="ml-2 text-xs text-kto-yellow">você pode revisar</span>}
+                  {d.title ?? <span className="text-muted">untitled</span>}
+                  {reviewable && <span className="ml-2 text-xs text-kto-yellow">you can review</span>}
                 </td>
                 <td className="px-4 py-3"><Badge tone={STATUS_TONE[d.status]}>{STATUS_LABEL[d.status]}</Badge></td>
                 <td className="px-4 py-3 text-sm">{d.createdBy}</td>

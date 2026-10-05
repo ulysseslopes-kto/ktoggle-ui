@@ -13,16 +13,16 @@ const ENTITY_TYPES: EntityType[] = ['FEATURE', 'PROJECT', 'ENVIRONMENT', 'ATTRIB
 
 function ChainBadge() {
   const verify = useVerifyAudit()
-  if (verify.isLoading) return <Badge>verificando…</Badge>
-  if (verify.error || !verify.data) return <Badge tone="yellow">verificação indisponível</Badge>
+  if (verify.isLoading) return <Badge>verifying…</Badge>
+  if (verify.error || !verify.data) return <Badge tone="yellow">verification unavailable</Badge>
   const v = verify.data
   return v.valid ? (
     <Badge tone="green" className="px-2.5 py-1 text-xs">
-      <ShieldCheck className="size-4" /> Trilha íntegra · {v.checked} registros
+      <ShieldCheck className="size-4" /> Chain verified · {v.checked} entries
     </Badge>
   ) : (
     <Badge tone="red" className="px-2.5 py-1 text-xs" >
-      <ShieldAlert className="size-4" /> Trilha violada em #{v.brokenAt ?? '?'}
+      <ShieldAlert className="size-4" /> Chain broken at #{v.brokenAt ?? '?'}
       {v.message && <span title={v.message}> · {v.message}</span>}
     </Badge>
   )
@@ -101,8 +101,8 @@ function Row({ entry }: { entry: AuditEntry }) {
         <tr className="bg-surface/50">
           <td colSpan={7} className="px-4 py-4">
             <div className="grid gap-4 md:grid-cols-2">
-              <DiffSide title="Antes" value={entry.before} other={entry.after} />
-              <DiffSide title="Depois" value={entry.after} other={entry.before} />
+              <DiffSide title="Before" value={entry.before} other={entry.after} />
+              <DiffSide title="After" value={entry.after} other={entry.before} />
             </div>
           </td>
         </tr>
@@ -131,12 +131,12 @@ function Chunk({ filter, beforeSeq, isLast, onMore }: {
       )}
       {entries?.map((entry) => <Row key={entry.id} entry={entry} />)}
       {isLast && entries && entries.length === 0 && beforeSeq === undefined && (
-        <tr><td colSpan={7}><EmptyState title="Nenhum registro encontrado" /></td></tr>
+        <tr><td colSpan={7}><EmptyState title="No entries found" /></td></tr>
       )}
       {isLast && entries && entries.length >= PAGE_SIZE && lowest !== undefined && (
         <tr>
           <td colSpan={7} className="px-4 py-3 text-center">
-            <Button variant="secondary" size="sm" onClick={() => onMore(lowest)}>Carregar mais</Button>
+            <Button variant="secondary" size="sm" onClick={() => onMore(lowest)}>Load more</Button>
           </td>
         </tr>
       )}
@@ -162,26 +162,26 @@ export function AuditPage() {
   return (
     <>
       <PageHeader
-        title="Auditoria"
-        subtitle="Trilha encadeada por hash de toda mudança: quem, quando, o quê e por quê."
+        title="Audit log"
+        subtitle="Hash-chained trail of every change: who, when, what and why."
         actions={<ChainBadge />}
       />
       <form onSubmit={apply} className="mb-4 flex flex-wrap items-end gap-3">
-        <Field label="Tipo de entidade" className="w-48">
+        <Field label="Entity type" className="w-48">
           <Select value={draft.entityType} onChange={(e) => setDraft({ ...draft, entityType: e.target.value })}>
-            <option value="">Todos</option>
+            <option value="">All</option>
             {ENTITY_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
           </Select>
         </Field>
-        <Field label="Chave da entidade" className="w-56">
+        <Field label="Entity key" className="w-56">
           <Input value={draft.entityKey} onChange={(e) => setDraft({ ...draft, entityKey: e.target.value })} />
         </Field>
-        <Field label="Autor" className="w-56">
+        <Field label="Actor" className="w-56">
           <Input value={draft.actor} onChange={(e) => setDraft({ ...draft, actor: e.target.value })} />
         </Field>
-        <Button type="submit" variant="secondary">Filtrar</Button>
+        <Button type="submit" variant="secondary">Filter</Button>
       </form>
-      <Table head={['Seq', 'Quando', 'Autor', 'Ação', 'Entidade', 'Motivo', 'Hash']}>
+      <Table head={['Seq', 'When', 'Actor', 'Action', 'Entity', 'Reason', 'Hash']}>
         {cursors.map((cursor, i) => (
           <Fragment key={`${JSON.stringify(filter)}-${cursor ?? 'first'}`}>
             <Chunk
