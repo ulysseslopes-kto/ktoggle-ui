@@ -23,7 +23,7 @@ test('wrong password is rejected with a clear message', async ({ page }) => {
 test('signing in lands on the feature list and signing out returns to the login', async ({ page }) => {
   await login(page, USERS.admin)
   await expect(page.getByRole('heading', { name: 'Features' })).toBeVisible()
-  await expect(page.getByText('new-checkout')).toBeVisible()
+  await expect(page.getByText('new-checkout', { exact: true })).toBeVisible()
   await expect(page.getByText('Admin Local')).toBeVisible()
   await page.screenshot({ path: 'e2e-report/screens/features.png', fullPage: true })
   await logout(page)
@@ -32,7 +32,7 @@ test('signing in lands on the feature list and signing out returns to the login'
 test('viewers can read but not change anything', async ({ page }) => {
   await login(page, USERS.viewer)
   await expect(page.getByRole('button', { name: 'New feature' })).toHaveCount(0)
-  await page.getByText('new-checkout').click()
+  await page.getByText('new-checkout', { exact: true }).click()
   await expect(page.getByRole('button', { name: 'New draft' })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Add rule' })).toHaveCount(0)
 })

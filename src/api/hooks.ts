@@ -21,6 +21,8 @@ import type {
   EvaluationResult,
   Feature,
   FeatureDraft,
+  ImportReport,
+  MigrationStatus,
   FeatureRevision,
   Json,
   Prerequisite,
@@ -30,6 +32,8 @@ import type {
   Rule,
   SavedGroup,
   SdkConnection,
+  ShadowConnectionStatus,
+  ShadowRun,
   ValueType,
   VerifiedBundle,
   Webhook,
@@ -438,5 +442,29 @@ export const useRotateKey = () =>
   useMutate(
     (clientKey: string) => api<SdkConnection>(`${V1}/sdk-connections/${clientKey}/rotate-key`, { method: 'POST' }),
     [['sdk-connections']],
+  )
+
+// ---- GrowthBook migration -----------------------------------------------------------------------
+
+export const useMigrationStatus = () =>
+  useQuery({ queryKey: ['migration', 'status'], queryFn: () => api<MigrationStatus>(`${V1}/growthbook/status`) })
+
+export const useImport = () =>
+  useMutate(
+    (body: { dryRun: boolean; environmentMapping?: Record<string, string> }) =>
+      api<ImportReport>(`${V1}/growthbook/import`, { method: 'POST', body }),
+    [['features'], ['sdk-connections'], ['saved-groups'], ['attributes'], ['environments'], ['projects']],
+  )
+
+export const useShadowStatus = () =>
+  useQuery({ queryKey: ['shadow'], queryFn: () => api<ShadowConnectionStatus[]>(`${V1}/shadow`), refetchInterval: 15_000 })
+
+export const useShadowRuns = (clientKey: string) =>
+  useQuery({ queryKey: ['shadow', clientKey], queryFn: () => api<ShadowRun[]>(`${V1}/shadow/${clientKey}/runs`, { query: { limit: 10 } }) })
+
+export const useRunShadow = () =>
+  useMutate(
+    (clientKey?: string) => api<ShadowRun[]>(`${V1}/shadow/run`, { method: 'POST', query: { clientKey } }),
+    [['shadow']],
   )
 

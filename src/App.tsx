@@ -9,6 +9,7 @@ import { DecisionsPage } from './pages/DecisionsPage'
 import { EnvironmentsPage } from './pages/EnvironmentsPage'
 import { FeatureDetailPage } from './pages/features/FeatureDetailPage'
 import { FeaturesPage } from './pages/features/FeaturesPage'
+import { MigrationPage } from './pages/MigrationPage'
 import { PlaygroundPage } from './pages/PlaygroundPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { ReplayPage } from './pages/ReplayPage'
@@ -44,6 +45,7 @@ const router = createBrowserRouter([
       { path: 'replay', element: <ReplayPage /> },
       { path: 'decisions', element: <DecisionsPage /> },
       { path: 'playground', element: <PlaygroundPage /> },
+      { path: 'migration', element: <MigrationPage /> },
       { path: '*', element: <Navigate to="/features" replace /> },
     ],
   },

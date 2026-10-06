@@ -1,5 +1,6 @@
 import { clsx } from 'clsx'
 import {
+  ArrowRightLeft,
   Boxes,
   Flag,
   FlaskConical,
@@ -40,6 +41,7 @@ const NAV = [
     { to: '/replay', label: 'Replay', icon: History },
     { to: '/decisions', label: 'Decisions', icon: ShieldCheck },
   ] },
+  { section: 'Migration', items: [{ to: '/migration', label: 'From GrowthBook', icon: ArrowRightLeft, adminOnly: true }] },
   { section: 'Demo', items: [{ to: '/playground', label: 'SDK playground', icon: FlaskConical }] },
 ]
 
@@ -58,10 +60,12 @@ export function AppLayout() {
           </span>
         </div>
         <nav className="flex-1 overflow-y-auto px-3 py-4">
-          {NAV.map((group) => (
+          {NAV.map((group) => ({ ...group, items: group.items.filter((item) => !('adminOnly' in item) || user.can('ktoggle-admin')) }))
+            .filter((group) => group.items.length > 0)
+            .map((group) => (
             <div key={group.section} className="mb-5">
               <p className="px-2 pb-1.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-kto-grey">{group.section}</p>
-              {group.items.filter((item) => !('adminOnly' in item) || user.can('ktoggle-admin')).map(({ to, label, icon: Icon }) => (
+              {group.items.map(({ to, label, icon: Icon }) => (
                 <NavLink
                   key={to}
                   to={to}

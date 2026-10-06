@@ -457,3 +457,60 @@ export interface WebhookDelivery {
   createdAt: string
   deliveredAt?: string | null
 }
+
+// ---- GrowthBook migration -----------------------------------------------------------------------
+
+export interface MigrationStatus {
+  configured: boolean
+  apiHost?: string | null
+  sdkHost?: string | null
+  canImport: boolean
+  shadowEnabled: boolean
+  shadowInterval: string
+  samples: number
+  readyAfter: number
+}
+
+export type ImportAction = 'CREATE' | 'UPDATE' | 'UNCHANGED' | 'UNSUPPORTED' | 'FAILED'
+
+export interface ImportReport {
+  dryRun: boolean
+  items: { type: string; key: string; action: ImportAction; messages: string[] }[]
+  totals: Record<ImportAction, number>
+}
+
+export type ShadowStatus = 'MATCH' | 'DIVERGENT' | 'NOT_IN_GROWTHBOOK' | 'NOT_IN_KTOGGLE' | 'ERROR'
+
+export interface ShadowDivergence {
+  featureKey: string
+  kind: 'VALUE' | 'MISSING_IN_KTOGGLE' | 'MISSING_IN_GROWTHBOOK'
+  divergingSamples: number
+  /** simulated users, never real ones */
+  examples: { attributes: Json; growthbook: Json; ktoggle: Json }[]
+}
+
+export interface ShadowRun {
+  id: string
+  clientKey: string
+  startedAt: string
+  durationMs: number
+  status: ShadowStatus
+  bundleHash?: string | null
+  samples: number
+  featuresCompared: number
+  divergentFeatures: number
+  divergences: ShadowDivergence[]
+  error?: string | null
+  triggeredBy: string
+}
+
+export interface ShadowConnectionStatus {
+  clientKey: string
+  name: string
+  environmentKey: string
+  lastRun?: ShadowRun | null
+  cleanStreak: number
+  ready: boolean
+  readyAfter: number
+}
+
