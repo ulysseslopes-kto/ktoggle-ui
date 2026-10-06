@@ -44,40 +44,84 @@ function typed(raw: string, datatype: Attribute['datatype'] | undefined): Json {
   return text
 }
 
-function clauseValue(clause: Clause, datatype: Attribute['datatype'] | undefined): Json {
+function listItems(raw: string): string[] {
+  return raw.split(',').map((v) => v.trim()).filter(Boolean)
+}
+
+/** The MongoDB operator a clause sets; two clauses on the same attribute may not set the same one. */
+function mongoOperator(operator: Operator): string {
+  if (operator === 'eq') return '$eq'
+  if (operator === 'exists' || operator === 'notExists') return '$exists'
+  return MONGO[operator]!
+}
+
+function clauseOperators(clause: Clause, datatype: Attribute['datatype'] | undefined): Record<string, Json> {
   switch (clause.operator) {
-    case 'eq':
-      return typed(clause.value, datatype)
     case 'exists':
       return { $exists: true }
     case 'notExists':
       return { $exists: false }
     case 'in':
     case 'nin':
-      return {
-        [MONGO[clause.operator]!]: clause.value.split(',').map((v) => v.trim()).filter(Boolean).map((v) => typed(v, datatype)),
-      }
+      return { [MONGO[clause.operator]!]: listItems(clause.value).map((v) => typed(v, datatype)) }
     case 'regex':
     case 'vgte':
     case 'vlt':
       return { [MONGO[clause.operator]!]: clause.value.trim() }
     default:
-      return { [MONGO[clause.operator]!]: typed(clause.value, datatype) }
+      return { [mongoOperator(clause.operator)]: typed(clause.value, datatype) }
   }
 }
 
-/** Builds the condition object; clauses on the same attribute are merged (e.g. age ≥ 18 and age < 30). */
+/**
+ * Why each clause cannot be saved (null when it can), by index: incomplete clauses, values that do not fit the
+ * attribute's type, invalid regular expressions and an operator repeated on the same attribute.
+ */
+export function clauseErrors(clauses: Clause[], attributes: Attribute[]): (string | null)[] {
+  const used = new Set<string>()
+  return clauses.map((clause) => {
+    if (!clause.attribute) return 'Choose an attribute.'
+    const slot = `${clause.attribute} ${mongoOperator(clause.operator)}`
+    const repeated = used.has(slot)
+    used.add(slot)
+    if (repeated) return 'This attribute already has a condition with this operator.'
+    if (!OPERATORS.find((o) => o.value === clause.operator)!.needsValue) return null
+    const list = clause.operator === 'in' || clause.operator === 'nin'
+    const values = list ? listItems(clause.value) : [clause.value.trim()].filter(Boolean)
+    if (values.length === 0) return list ? 'Enter at least one value.' : 'Enter a value.'
+    if (clause.operator === 'regex') {
+      try {
+        new RegExp(values[0])
+      } catch {
+        return 'Invalid regular expression.'
+      }
+      return null
+    }
+    if (clause.operator === 'vgte' || clause.operator === 'vlt') return null
+    const datatype = attributes.find((a) => a.key === clause.attribute)?.datatype
+    if ((datatype === 'NUMBER' || datatype === 'NUMBER_ARRAY') && values.some((v) => !Number.isFinite(Number(v)))) {
+      return list ? 'Every value must be a number.' : 'Enter a number.'
+    }
+    if (datatype === 'BOOLEAN' && values.some((v) => v !== 'true' && v !== 'false')) return 'Use true or false.'
+    return null
+  })
+}
+
+/**
+ * Builds the condition object; clauses on the same attribute are merged (e.g. age ≥ 18 and age < 30, or country
+ * equals BR and is in BR, PT). Check {@link clauseErrors} first: incomplete clauses are not left out here.
+ */
 export function buildCondition(clauses: Clause[], attributes: Attribute[]): Json | null {
-  const result: Record<string, Json> = {}
+  const merged: Record<string, Record<string, Json>> = {}
   for (const clause of clauses.filter((c) => c.attribute)) {
     const datatype = attributes.find((a) => a.key === clause.attribute)?.datatype
-    const value = clauseValue(clause, datatype)
-    const existing = result[clause.attribute]
-    if (isOperatorObject(existing) && isOperatorObject(value)) {
-      result[clause.attribute] = { ...existing, ...value }
-    } else {
-      result[clause.attribute] = value
-    }
+    merged[clause.attribute] = { ...merged[clause.attribute], ...clauseOperators(clause, datatype) }
+  }
+  const result: Record<string, Json> = {}
+  for (const [attribute, operators] of Object.entries(merged)) {
+    const keys = Object.keys(operators)
+    // a lone equality is written as the plain value, as GrowthBook does
+    result[attribute] = keys.length === 1 && keys[0] === '$eq' ? operators.$eq : operators
   }
   return Object.keys(result).length === 0 ? null : result
 }

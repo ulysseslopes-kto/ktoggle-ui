@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useProjects, useUpdateDraftMetadata } from '@/api/hooks'
+import { projectEditableBy, useProjects, useUpdateDraftMetadata } from '@/api/hooks'
+import { useAuth } from '@/auth/auth'
 import type { FeatureDraft, FeatureSnapshot, Json } from '@/api/types'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
@@ -27,7 +28,9 @@ function MetadataForm({ content, ensureDraft, onDone }: {
   ensureDraft: () => Promise<FeatureDraft>
   onDone: () => void
 }) {
-  const projects = useProjects().data ?? []
+  const user = useAuth()
+  // restricted projects only take features from their own editors (the current one stays selectable)
+  const projects = (useProjects().data ?? []).filter((p) => p.key === content.projectKey || projectEditableBy(p, user))
   const update = useUpdateDraftMetadata()
   const [defaultValue, setDefaultValue] = useState<Json | undefined>(content.defaultValue)
   const [projectKey, setProjectKey] = useState(content.projectKey ?? '')

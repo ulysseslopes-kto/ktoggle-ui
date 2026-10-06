@@ -194,7 +194,10 @@ export interface FeatureRevision {
   createdAt: string
 }
 
-export type EntityType = 'PROJECT' | 'ENVIRONMENT' | 'ATTRIBUTE' | 'SAVED_GROUP' | 'FEATURE' | 'SDK_CONNECTION' | 'BUNDLE'
+/** Mirrors the backend enum audit/EntityType. */
+export type EntityType =
+  | 'PROJECT' | 'ENVIRONMENT' | 'ATTRIBUTE' | 'SAVED_GROUP' | 'FEATURE' | 'SDK_CONNECTION' | 'REVIEW_SETTINGS' | 'BUNDLE'
+  | 'API_TOKEN' | 'WEBHOOK'
 
 export interface AuditEntry {
   seq: number

@@ -1,9 +1,9 @@
 import { clsx } from 'clsx'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useDraftsByStatus } from '@/api/hooks'
-import type { DraftStatus } from '@/api/types'
-import { APPROVER_ROLE, useAuth } from '@/auth/auth'
+import { useDraftsByStatus, useReviewSettings } from '@/api/hooks'
+import type { DraftStatus, FeatureDraft, ReviewSettings } from '@/api/types'
+import { useAuth, type CurrentUser } from '@/auth/auth'
 import { Badge, EmptyState, ErrorBanner, formatDate, PageHeader, Spinner, Table } from '@/components/ui/Display'
 import { STATUS_LABEL, STATUS_TONE } from './features/draftLabels'
 
@@ -21,7 +21,7 @@ export function ReviewsPage() {
   const user = useAuth()
   const [tab, setTab] = useState(0)
   const drafts = useDraftsByStatus(TABS[tab].statuses)
-  const mayReview = user.hasRole('ktoggle-admin') || user.hasRole(APPROVER_ROLE)
+  const settings = useReviewSettings().data
 
   return (
     <>
@@ -52,7 +52,7 @@ export function ReviewsPage() {
       ) : (
         <Table head={['Feature', 'Draft', 'Status', 'Author', 'Base', 'Updated']}>
           {drafts.data.map((d) => {
-            const reviewable = mayReview && d.status === 'PENDING_REVIEW' && d.createdBy !== user.username
+            const reviewable = d.status === 'PENDING_REVIEW' && canApprove(settings, user, d)
             return (
               <tr key={d.id} className={clsx('hover:bg-surface/60', reviewable && 'bg-kto-yellow/5')}>
                 <td className="px-4 py-3">
@@ -82,4 +82,11 @@ export function ReviewsPage() {
       )}
     </>
   )
+}
+
+/** Mirrors the server's review policy: listed as approver (user or role), and not the author unless self-approval is on. */
+function canApprove(settings: ReviewSettings | undefined, user: CurrentUser, draft: FeatureDraft): boolean {
+  if (!settings) return false
+  const eligible = settings.approverUsers.includes(user.username) || settings.approverRoles.some((r) => user.hasRole(r))
+  return eligible && (settings.allowSelfApproval || draft.createdBy !== user.username)
 }

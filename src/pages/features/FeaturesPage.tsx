@@ -4,13 +4,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   useCanEditProject,
   useCreateDraft,
+  useDraftAction,
   useEnvironments,
   useFeatures,
   useOpenDrafts,
   useProjects,
   useUpdateDraftEnvironment,
 } from '@/api/hooks'
-import type { Feature } from '@/api/types'
+import type { Feature, FeatureDraft } from '@/api/types'
 import { useAuth } from '@/auth/auth'
 import { Button } from '@/components/ui/Button'
 import { Badge, EmptyState, ErrorBanner, formatDate, PageHeader, Spinner, Table, ValueChip } from '@/components/ui/Display'
@@ -33,18 +34,37 @@ export function FeaturesPage() {
   const openDrafts = useOpenDrafts().data ?? []
   const createDraft = useCreateDraft()
   const updateEnvironment = useUpdateDraftEnvironment()
+  const discard = useDraftAction()
+  const [toggling, setToggling] = useState(false)
+  const [leftover, setLeftover] = useState<FeatureDraft | null>(null)
   const navigate = useNavigate()
 
   /** A toggle never goes live directly: it opens a draft with that change and its review screen. */
   const toggle = async (feature: Feature, environmentKey: string, enabled: boolean) => {
-    const env = environments.find((e) => e.key === environmentKey)
-    const draft = await createDraft.mutateAsync({
-      key: feature.key,
-      title: `Turn ${enabled ? 'on' : 'off'} in ${env?.name ?? environmentKey}`,
-    })
-    const rules = feature.environments[environmentKey]?.rules ?? []
-    await updateEnvironment.mutateAsync({ id: draft.id, environmentKey, enabled, rules, version: draft.version })
-    navigate(`/features/${encodeURIComponent(feature.key)}?draft=${draft.id}&review=1`)
+    if (toggling) return
+    setToggling(true)
+    setLeftover(null)
+    try {
+      const env = environments.find((e) => e.key === environmentKey)
+      const draft = await createDraft.mutateAsync({
+        key: feature.key,
+        title: `Turn ${enabled ? 'on' : 'off'} in ${env?.name ?? environmentKey}`,
+      })
+      // the new draft holds what is live now; the row of this list may be older
+      const rules = draft.proposed.environments[environmentKey]?.rules ?? []
+      try {
+        await updateEnvironment.mutateAsync({ id: draft.id, environmentKey, enabled, rules, version: draft.version })
+      } catch {
+        // the error banner tells what failed; do not leave an empty draft behind
+        await discard.mutateAsync({ id: draft.id, action: 'discard' }).catch(() => setLeftover(draft))
+        return
+      }
+      navigate(`/features/${encodeURIComponent(feature.key)}?draft=${draft.id}&review=1`)
+    } catch {
+      // shown by the error banner
+    } finally {
+      setToggling(false)
+    }
   }
 
   return (
@@ -73,6 +93,15 @@ export function FeaturesPage() {
       </div>
 
       <ErrorBanner error={features.error ?? createDraft.error ?? updateEnvironment.error} />
+      {leftover && (
+        <p className="mb-4 text-sm text-soft">
+          The draft opened for this change could not be removed:{' '}
+          <Link to={`/features/${encodeURIComponent(leftover.featureKey)}?draft=${leftover.id}`} className="font-semibold text-white hover:text-kto-red">
+            open it
+          </Link>{' '}
+          to fix or discard it.
+        </p>
+      )}
       {features.isLoading ? (
         <Spinner />
       ) : !features.data?.length ? (
@@ -86,7 +115,7 @@ export function FeaturesPage() {
               key={feature.key}
               feature={feature}
               environments={environments.map((e) => e.key)}
-              editable={can('ktoggle-editor') && !createDraft.isPending}
+              editable={can('ktoggle-editor') && !toggling}
               drafts={openDrafts.filter((d) => d.featureKey === feature.key).length}
               onToggle={(environmentKey, enabled) => void toggle(feature, environmentKey, enabled)}
             />
@@ -133,7 +162,7 @@ function FeatureRow({ feature, environments, editable, drafts, onToggle }: {
                 size="sm"
                 checked={Boolean(settings?.enabled)}
                 disabled={!canToggle || feature.archived}
-                label={`${feature.key} em ${env}`}
+                label={`${feature.key} in ${env}`}
                 onChange={(enabled) => onToggle(env, enabled)}
               />
               {settings?.rules.length ? (

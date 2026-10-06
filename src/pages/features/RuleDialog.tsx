@@ -9,7 +9,7 @@ import { Checkbox, Field, Input, Select } from '@/components/ui/Form'
 import { ConditionEditor } from './ConditionEditor'
 import { equalWeights, nextVariationKey, TRACKING_KEY, weightsAddUp } from './experiments'
 import { PrerequisiteEditor } from './PrerequisiteEditor'
-import { fromLocalInput, toLocalInput } from './schedule'
+import { instantFromInput, toLocalInput } from './schedule'
 import { defaultFor, ValueEditor } from './ValueEditor'
 
 const TYPES = [
@@ -71,7 +71,8 @@ function RuleForm({ featureKey, projectKey, valueType, initial, onCancel, onSave
   const [condition, setCondition] = useState<Json | null | undefined>(initial?.condition ?? null)
   const [groupMatch, setGroupMatch] = useState<GroupMatches>(() => matchesOf(initial))
   const [value, setValue] = useState<Json | undefined>(initial && initial.type !== 'experiment' ? initial.value : on)
-  const [coverage, setCoverage] = useState(initial && initial.type !== 'force' ? Math.round(initial.coverage * 100) : 50)
+  // 0..1, kept exactly as loaded (e.g. 0.125) unless the slider is moved
+  const [coverage, setCoverage] = useState(initial && initial.type !== 'force' ? initial.coverage : 0.5)
   const [chosenHash, setHashAttribute] = useState(initial && initial.type !== 'force' ? initial.hashAttribute : '')
   // attributes may still be loading when the dialog opens: fall back to the default once they arrive
   const hashAttribute = chosenHash || defaultHash
@@ -86,13 +87,16 @@ function RuleForm({ featureKey, projectKey, valueType, initial, onCancel, onSave
   )
 
   const [prerequisites, setPrerequisites] = useState<Prerequisite[]>(initial?.prerequisites ?? [])
+  const [prerequisitesValid, setPrerequisitesValid] = useState(true)
   const [gated, setGated] = useState(prerequisites.length > 0)
   const [startsAt, setStartsAt] = useState(toLocalInput(initial?.schedule?.startsAt))
   const [endsAt, setEndsAt] = useState(toLocalInput(initial?.schedule?.endsAt))
   const [scheduled, setScheduled] = useState(Boolean(startsAt || endsAt))
-  const schedule = scheduled ? { startsAt: fromLocalInput(startsAt), endsAt: fromLocalInput(endsAt) } : null
+  const schedule = scheduled
+    ? { startsAt: instantFromInput(startsAt, initial?.schedule?.startsAt), endsAt: instantFromInput(endsAt, initial?.schedule?.endsAt) }
+    : null
   const scheduleError =
-    schedule?.startsAt && schedule.endsAt && schedule.endsAt <= schedule.startsAt ? 'The end must be after the start.' : null
+    schedule?.startsAt && schedule.endsAt && new Date(schedule.endsAt) <= new Date(schedule.startsAt) ? 'The end must be after the start.' : null
 
   const weights = variations.map((v) => v.weight)
   const experimentValid =
@@ -103,12 +107,13 @@ function RuleForm({ featureKey, projectKey, valueType, initial, onCancel, onSave
   const valid =
     condition !== undefined &&
     !scheduleError &&
+    (!gated || prerequisitesValid) &&
     (type === 'force' || Boolean(hashAttribute)) &&
     (type === 'experiment' ? experimentValid : value !== undefined)
 
   const selectType = (next: Rule['type']) => {
     // experiments usually include every matching user; rollouts start at half
-    if (!initial && next !== type && next !== 'force') setCoverage(next === 'experiment' ? 100 : 50)
+    if (!initial && next !== type && next !== 'force') setCoverage(next === 'experiment' ? 1 : 0.5)
     setType(next)
   }
 
@@ -134,14 +139,14 @@ function RuleForm({ featureKey, projectKey, valueType, initial, onCancel, onSave
     if (type === 'force') {
       onSave({ ...base, type, value: value! })
     } else if (type === 'rollout') {
-      onSave({ ...base, type, value: value!, coverage: coverage / 100, hashAttribute })
+      onSave({ ...base, type, value: value!, coverage, hashAttribute })
     } else {
       onSave({
         ...base,
         type,
         trackingKey,
         hashAttribute,
-        coverage: coverage / 100,
+        coverage,
         hashVersion: initial?.type === 'experiment' ? initial.hashVersion : 2,
         seed: initial?.type === 'experiment' ? initial.seed : null,
         variations: variations.map((v) => ({ key: v.key, name: v.name || null, value: v.value!, weight: v.weight })),
@@ -206,12 +211,12 @@ function RuleForm({ featureKey, projectKey, valueType, initial, onCancel, onSave
                 type="range"
                 min={0}
                 max={100}
-                value={coverage}
-                onChange={(e) => setCoverage(Number(e.target.value))}
+                value={coverage * 100}
+                onChange={(e) => setCoverage(Number(e.target.value) / 100)}
                 className="flex-1 accent-kto-red"
                 aria-label="Percentage"
               />
-              <span className="w-14 text-right font-mono text-lg font-bold text-kto-yellow">{coverage}%</span>
+              <span className="w-14 text-right font-mono text-lg font-bold text-kto-yellow">{Number((coverage * 100).toFixed(2))}%</span>
             </div>
           </Field>
           <Field label="Hash attribute" hint="Keeps each user consistently in the same bucket.">
@@ -306,7 +311,13 @@ function RuleForm({ featureKey, projectKey, valueType, initial, onCancel, onSave
         />
         {gated && (
           <>
-            <PrerequisiteEditor featureKey={featureKey} projectKey={projectKey} value={prerequisites} onChange={setPrerequisites} />
+            <PrerequisiteEditor
+              featureKey={featureKey}
+              projectKey={projectKey}
+              value={prerequisites}
+              onChange={setPrerequisites}
+              onValidityChange={setPrerequisitesValid}
+            />
             <p className="text-xs text-muted">When a prerequisite fails for a user, this rule is skipped and evaluation continues.</p>
           </>
         )}

@@ -37,9 +37,33 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
   })
   const text = await response.text()
-  const json = text ? JSON.parse(text) : undefined
+  const json = parseJson(text)
   if (!response.ok) {
-    throw new ApiError(response.status, json?.message ?? response.statusText, json?.messageCode, json?.data)
+    // gateways answer 502/504 with an HTML page: fall back to the status instead of a JSON parse error
+    const body = json.ok && json.value !== null && typeof json.value === 'object' ? (json.value as ErrorBody) : {}
+    const message = typeof body.message === 'string' && body.message ? body.message : null
+    throw new ApiError(
+      response.status,
+      message ?? `${response.status} ${response.statusText || 'Request failed'}`,
+      typeof body.messageCode === 'string' ? body.messageCode : undefined,
+      body.data,
+    )
   }
-  return json as T
+  if (!json.ok) throw new ApiError(response.status, 'The server returned a response that is not valid JSON')
+  return json.value as T
+}
+
+interface ErrorBody {
+  message?: unknown
+  messageCode?: unknown
+  data?: unknown
+}
+
+function parseJson(text: string): { ok: true; value: unknown } | { ok: false } {
+  if (!text) return { ok: true, value: undefined }
+  try {
+    return { ok: true, value: JSON.parse(text) }
+  } catch {
+    return { ok: false }
+  }
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fromLocalInput, scheduleState, toLocalInput } from './schedule'
+import { fromLocalInput, instantFromInput, scheduleState, toLocalInput } from './schedule'
 
 describe('schedule', () => {
   const now = new Date('2026-10-05T12:00:00Z')
@@ -18,5 +18,14 @@ describe('schedule', () => {
     expect(fromLocalInput(toLocalInput(iso))).toBe(iso)
     expect(fromLocalInput('')).toBeNull()
     expect(toLocalInput(null)).toBe('')
+  })
+
+  it('keeps the original instant, seconds included, until the field is changed', () => {
+    const original = '2026-10-05T12:30:45.123Z'
+    expect(instantFromInput(toLocalInput(original), original)).toBe(original)
+    const edited = toLocalInput('2026-10-05T13:00:00.000Z')
+    expect(instantFromInput(edited, original)).toBe('2026-10-05T13:00:00.000Z')
+    expect(instantFromInput('', original)).toBeNull()
+    expect(instantFromInput(edited, null)).toBe('2026-10-05T13:00:00.000Z')
   })
 })

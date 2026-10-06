@@ -83,9 +83,11 @@ function PrerequisitesForm({ content, ensureDraft, onDone }: {
   onDone: () => void
 }) {
   const [value, setValue] = useState<Prerequisite[]>(content.prerequisites ?? [])
+  const [valid, setValid] = useState(true)
   const update = useUpdateDraftPrerequisites()
 
   const save = async () => {
+    if (!valid) return
     const draft = await ensureDraft()
     await update.mutateAsync({ id: draft.id, prerequisites: value, version: draft.version })
     onDone()
@@ -93,11 +95,11 @@ function PrerequisitesForm({ content, ensureDraft, onDone }: {
 
   return (
     <div className="space-y-4">
-      <PrerequisiteEditor featureKey={content.key} projectKey={content.projectKey} value={value} onChange={setValue} />
+      <PrerequisiteEditor featureKey={content.key} projectKey={content.projectKey} value={value} onChange={setValue} onValidityChange={setValid} />
       <ErrorBanner error={update.error} />
       <div className="flex justify-end gap-2 border-t border-line pt-4">
         <Button variant="ghost" onClick={onDone}>Cancel</Button>
-        <Button onClick={() => void save()} loading={update.isPending}>Save to draft</Button>
+        <Button onClick={() => void save()} loading={update.isPending} disabled={!valid}>Save to draft</Button>
       </div>
     </div>
   )

@@ -25,6 +25,15 @@ export function fromLocalInput(value: string): string | null {
   return Number.isNaN(date.getTime()) ? null : date.toISOString()
 }
 
+/**
+ * Instant to save for a {@code datetime-local} field: the original one while the field still shows it (the input has
+ * no seconds, so converting it back would truncate them), otherwise the one typed.
+ */
+export function instantFromInput(value: string, original?: string | null): string | null {
+  if (original && value === toLocalInput(original)) return original
+  return fromLocalInput(value)
+}
+
 export function formatInstant(iso: string): string {
   return new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
 }

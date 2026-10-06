@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
   useCreateDraft,
+  useDraft,
   useDraftAction,
   useEnvironments,
   useFeature,
@@ -47,7 +48,12 @@ export function FeatureDetailPage() {
 
   const draftId = params.get('draft') ?? LIVE
   const reviewing = params.get('review') === '1'
-  const draft = drafts.data?.find((d) => d.id === draftId) ?? null
+  const openDraft = drafts.data?.find((d) => d.id === draftId) ?? null
+  // the view also carries the user's permissions; published or discarded drafts (e.g. linked from the review
+  // queue) are not among the open ones and are shown from it, read-only
+  const view = useDraft(draftId || null)
+  const draft = openDraft ?? view.data?.draft ?? null
+  const closed = draft !== null && (draft.status === 'PUBLISHED' || draft.status === 'DISCARDED')
 
   const selectDraft = (id: string, review = false) => {
     const next = new URLSearchParams(params)
@@ -58,15 +64,18 @@ export function FeatureDetailPage() {
     setParams(next, { replace: true })
   }
 
-  if (feature.isLoading || environments.isLoading || drafts.isLoading) return <Spinner />
+  if (feature.isLoading || environments.isLoading || drafts.isLoading || (!openDraft && view.isLoading)) return <Spinner />
   if (feature.error || !feature.data) return <ErrorBanner error={feature.error ?? new Error('Feature not found')} />
 
   const f = feature.data
   const envs = environments.data ?? []
   const current = activeEnv ?? envs.find((e) => e.requiresReview)?.key ?? envs[0]?.key ?? null
   const content: FeatureSnapshot = draft?.proposed ?? snapshotOf(f)
-  const projectLocked = can('ktoggle-editor') && !canEditLiveProject
-  const editable = can('ktoggle-editor') && canEditLiveProject && (draft === null || draft.status !== 'PUBLISHED')
+  const canEdit = can('ktoggle-editor') && canEditLiveProject === true
+  const projectLocked = can('ktoggle-editor') && canEditLiveProject === false
+  const editable = canEdit && !closed
+  // the server lets the author or an admin discard; it says so in the draft view
+  const canDiscard = can('ktoggle-editor') && !closed && Boolean(view.data?.permissions.discard)
   const busy = createDraft.isPending || updateEnvironment.isPending
 
   /** Returns the selected draft, or opens a new one when looking at the live version. */
@@ -104,7 +113,7 @@ export function FeatureDetailPage() {
           </span>
         }
         actions={editable && (
-          <Button variant="secondary" onClick={() => setEditingMetadata(true)}><Pencil className="size-4" /> Edit</Button>
+          <Button variant="secondary" disabled={busy} onClick={() => setEditingMetadata(true)}><Pencil className="size-4" /> Edit</Button>
         )}
       />
 
@@ -112,7 +121,9 @@ export function FeatureDetailPage() {
         feature={f}
         drafts={drafts.data ?? []}
         draft={draft}
-        canEdit={can('ktoggle-editor') && canEditLiveProject}
+        closed={closed}
+        canEdit={canEdit}
+        canDiscard={canDiscard}
         creating={createDraft.isPending}
         onSelect={(id) => selectDraft(id)}
         onCreate={() => createDraft.mutate({ key: f.key }, { onSuccess: (d) => selectDraft(d.id) })}
@@ -126,7 +137,7 @@ export function FeatureDetailPage() {
           still read it, test it and review drafts.
         </p>
       )}
-      <ErrorBanner error={createDraft.error ?? updateEnvironment.error ?? discard.error} />
+      <ErrorBanner error={createDraft.error ?? updateEnvironment.error ?? discard.error ?? (draft ? null : view.error)} />
 
       <Card>
         <dl className="grid gap-6 sm:grid-cols-3">
@@ -216,11 +227,14 @@ export function FeatureDetailPage() {
   )
 }
 
-function DraftBar({ feature, drafts, draft, canEdit, creating, onSelect, onCreate, onReview, onDiscard }: {
+function DraftBar({ feature, drafts, draft, closed, canEdit, canDiscard, creating, onSelect, onCreate, onReview, onDiscard }: {
   feature: Feature
   drafts: FeatureDraft[]
   draft: FeatureDraft | null
+  /** published or discarded: read-only, not among the open drafts */
+  closed: boolean
   canEdit: boolean
+  canDiscard: boolean
   creating: boolean
   onSelect: (id: string) => void
   onCreate: () => void
@@ -236,7 +250,7 @@ function DraftBar({ feature, drafts, draft, canEdit, creating, onSelect, onCreat
         <FilePenLine className={clsx('size-5', draft ? 'text-kto-red' : 'text-muted')} />
         <Select className="w-auto min-w-72" value={draft?.id ?? LIVE} onChange={(e) => onSelect(e.target.value)} aria-label="Version">
           <option value={LIVE}>Published · revision #{feature.revision}</option>
-          {drafts.map((d) => (
+          {[...drafts, ...(closed && draft ? [draft] : [])].map((d) => (
             <option key={d.id} value={d.id}>
               Draft · {d.title ?? 'untitled'} · {d.createdBy} · {STATUS_LABEL[d.status]}
             </option>
@@ -245,7 +259,11 @@ function DraftBar({ feature, drafts, draft, canEdit, creating, onSelect, onCreat
         {draft ? (
           <>
             <Badge tone={STATUS_TONE[draft.status]}>{STATUS_LABEL[draft.status]}</Badge>
-            <span className="text-xs text-muted">based on revision #{draft.baseRevision} · edited by {draft.updatedBy} {formatDate(draft.updatedAt)}</span>
+            <span className="text-xs text-muted">
+              based on revision #{draft.baseRevision}
+              {draft.publishedRevision ? ` · published as revision #${draft.publishedRevision}` : ''} · edited by {draft.updatedBy}{' '}
+              {formatDate(draft.updatedAt)}{closed ? ' · read-only' : ''}
+            </span>
           </>
         ) : (
           drafts.length > 0 && <span className="text-xs text-kto-yellow">{drafts.length} open draft(s)</span>
@@ -253,10 +271,14 @@ function DraftBar({ feature, drafts, draft, canEdit, creating, onSelect, onCreat
       </div>
       <div className="flex gap-2">
         {draft ? (
-          <>
-            <Button size="sm" variant="ghost" onClick={onDiscard}><Trash2 className="size-3.5" /> Discard</Button>
-            <Button size="sm" onClick={onReview}><GitPullRequest className="size-3.5" /> Review & publish</Button>
-          </>
+          closed ? (
+            <Button size="sm" variant="secondary" onClick={onReview}><GitPullRequest className="size-3.5" /> Changes & history</Button>
+          ) : (
+            <>
+              {canDiscard && <Button size="sm" variant="ghost" onClick={onDiscard}><Trash2 className="size-3.5" /> Discard</Button>}
+              <Button size="sm" onClick={onReview}><GitPullRequest className="size-3.5" /> Review & publish</Button>
+            </>
+          )
         ) : (
           canEdit && <Button size="sm" variant="secondary" loading={creating} onClick={onCreate}><Plus className="size-3.5" /> New draft</Button>
         )}

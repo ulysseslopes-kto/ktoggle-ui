@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useCreateFeature, useProjects } from '@/api/hooks'
+import { projectEditableBy, useCreateFeature, useProjects } from '@/api/hooks'
 import type { Json, ValueType } from '@/api/types'
+import { useAuth } from '@/auth/auth'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { ErrorBanner } from '@/components/ui/Display'
@@ -27,7 +28,9 @@ export function FeatureFormDialog({ open, onOpenChange }: { open: boolean; onOpe
 
 function FeatureForm({ onDone }: { onDone: () => void }) {
   const navigate = useNavigate()
-  const projects = useProjects().data ?? []
+  const user = useAuth()
+  // restricted projects only take features from their own editors
+  const projects = (useProjects().data ?? []).filter((p) => projectEditableBy(p, user))
   const create = useCreateFeature()
   const [key, setKey] = useState('')
   const [valueType, setValueType] = useState<ValueType>('BOOLEAN')

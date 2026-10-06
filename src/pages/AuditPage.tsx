@@ -1,6 +1,6 @@
 import { clsx } from 'clsx'
 import { ChevronDown, ChevronRight, ShieldAlert, ShieldCheck } from 'lucide-react'
-import { Fragment, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useAudit, useVerifyAudit, type AuditFilter } from '@/api/hooks'
 import type { AuditEntry, EntityType } from '@/api/types'
@@ -9,7 +9,9 @@ import { Badge, Code, EmptyState, ErrorBanner, JsonBlock, PageHeader, Spinner, T
 import { Field, Input, Select } from '@/components/ui/Form'
 
 const PAGE_SIZE = 50
-const ENTITY_TYPES: EntityType[] = ['FEATURE', 'PROJECT', 'ENVIRONMENT', 'ATTRIBUTE', 'SAVED_GROUP', 'SDK_CONNECTION', 'BUNDLE']
+const ENTITY_TYPES: EntityType[] = [
+  'FEATURE', 'PROJECT', 'ENVIRONMENT', 'ATTRIBUTE', 'SAVED_GROUP', 'SDK_CONNECTION', 'BUNDLE', 'REVIEW_SETTINGS', 'API_TOKEN', 'WEBHOOK',
+]
 
 function ChainBadge() {
   const verify = useVerifyAudit()
@@ -49,7 +51,7 @@ function DiffSide({ title, value, other }: { title: string; value: unknown; othe
           .filter((k) => !(k in value))
           .map((k) => (
             <div key={k} className="rounded bg-kto-red/15 px-1 italic text-muted">
-              {k}: (removido)
+              {k}: (removed)
             </div>
           ))}
     </div>
@@ -111,16 +113,10 @@ function Row({ entry }: { entry: AuditEntry }) {
   )
 }
 
-/** One page of the (accumulated) list; the last chunk renders the "load more" row. */
-function Chunk({ filter, beforeSeq, isLast, onMore }: {
-  filter: AuditFilter
-  beforeSeq?: number
-  isLast: boolean
-  onMore: (beforeSeq: number) => void
-}) {
-  const audit = useAudit({ ...filter, beforeSeq, limit: PAGE_SIZE })
-  const entries = audit.data
-  const lowest = entries && entries.length > 0 ? Math.min(...entries.map((e) => e.seq)) : undefined
+/** The accumulated pages of the list, plus the "load more" row. */
+function Entries({ filter }: { filter: AuditFilter }) {
+  const audit = useAudit(filter, PAGE_SIZE)
+  const entries = audit.data?.pages.flat()
   return (
     <>
       {audit.isLoading && (
@@ -130,13 +126,15 @@ function Chunk({ filter, beforeSeq, isLast, onMore }: {
         <tr><td colSpan={7} className="p-4"><ErrorBanner error={audit.error} /></td></tr>
       )}
       {entries?.map((entry) => <Row key={entry.id} entry={entry} />)}
-      {isLast && entries && entries.length === 0 && beforeSeq === undefined && (
+      {entries && entries.length === 0 && (
         <tr><td colSpan={7}><EmptyState title="No entries found" /></td></tr>
       )}
-      {isLast && entries && entries.length >= PAGE_SIZE && lowest !== undefined && (
+      {audit.hasNextPage && (
         <tr>
           <td colSpan={7} className="px-4 py-3 text-center">
-            <Button variant="secondary" size="sm" onClick={() => onMore(lowest)}>Load more</Button>
+            <Button variant="secondary" size="sm" loading={audit.isFetchingNextPage} onClick={() => void audit.fetchNextPage()}>
+              Load more
+            </Button>
           </td>
         </tr>
       )}
@@ -147,7 +145,6 @@ function Chunk({ filter, beforeSeq, isLast, onMore }: {
 export function AuditPage() {
   const [draft, setDraft] = useState({ entityType: '', entityKey: '', actor: '' })
   const [filter, setFilter] = useState<AuditFilter>({})
-  const [cursors, setCursors] = useState<(number | undefined)[]>([undefined])
 
   const apply = (e: FormEvent) => {
     e.preventDefault()
@@ -156,7 +153,6 @@ export function AuditPage() {
       entityKey: draft.entityKey.trim() || undefined,
       actor: draft.actor.trim() || undefined,
     })
-    setCursors([undefined])
   }
 
   return (
@@ -182,16 +178,7 @@ export function AuditPage() {
         <Button type="submit" variant="secondary">Filter</Button>
       </form>
       <Table head={['Seq', 'When', 'Actor', 'Action', 'Entity', 'Reason', 'Hash']}>
-        {cursors.map((cursor, i) => (
-          <Fragment key={`${JSON.stringify(filter)}-${cursor ?? 'first'}`}>
-            <Chunk
-              filter={filter}
-              beforeSeq={cursor}
-              isLast={i === cursors.length - 1}
-              onMore={(seq) => setCursors((c) => [...c, seq])}
-            />
-          </Fragment>
-        ))}
+        <Entries filter={filter} />
       </Table>
     </>
   )

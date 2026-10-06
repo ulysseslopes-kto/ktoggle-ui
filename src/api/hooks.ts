@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query'
-import { useAuth } from '@/auth/auth'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react-query'
+import { useAuth, type CurrentUser } from '@/auth/auth'
 import { api } from './client'
 import type {
   ApiToken,
@@ -45,15 +45,24 @@ import type {
 
 const V1 = '/admin/v1'
 
-/** Mutations invalidate everything that may show derived state (bundles, audit) — simple and always correct. */
-function useMutate<TVars, TResult>(fn: (vars: TVars) => Promise<TResult>, invalidate: QueryKey[] = []) {
+/**
+ * Mutations invalidate everything that may show derived state (bundles, audit) — simple and always correct. A mutation
+ * stays pending until its own queries are refetched, so the next action never starts from stale data (e.g. an old draft
+ * version); {@code remember} writes the response into the cache right away.
+ */
+function useMutate<TVars, TResult>(
+  fn: (vars: TVars) => Promise<TResult>,
+  invalidate: QueryKey[] = [],
+  remember?: (queryClient: QueryClient, result: TResult, vars: TVars) => void,
+) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: fn,
-    onSuccess: () => {
-      invalidate.forEach((queryKey) => queryClient.invalidateQueries({ queryKey }))
-      queryClient.invalidateQueries({ queryKey: ['audit'] })
-      queryClient.invalidateQueries({ queryKey: ['bundles'] })
+    onSuccess: async (result, vars) => {
+      remember?.(queryClient, result, vars)
+      void queryClient.invalidateQueries({ queryKey: ['audit'] })
+      void queryClient.invalidateQueries({ queryKey: ['bundles'] })
+      await Promise.all(invalidate.map((queryKey) => queryClient.invalidateQueries({ queryKey })))
     },
   })
 }
@@ -144,6 +153,18 @@ export const useCreateFeature = () =>
 /** Every change to an existing feature is staged in a draft; only publishing changes what SDKs receive. */
 const draftKeys: QueryKey[] = [['features'], ['drafts']]
 
+/** Writes a draft returned by a mutation into the cache at once, so the next edit sends its current version. */
+function rememberDraft(queryClient: QueryClient, draft: FeatureDraft) {
+  const open = draft.status !== 'PUBLISHED' && draft.status !== 'DISCARDED'
+  queryClient.setQueryData<FeatureDraft[]>(['drafts', 'feature', draft.featureKey], (drafts) => {
+    if (!drafts) return drafts
+    const others = drafts.filter((d) => d.id !== draft.id)
+    if (!open) return others
+    return others.length === drafts.length ? [...drafts, draft] : drafts.map((d) => (d.id === draft.id ? draft : d))
+  })
+  queryClient.setQueryData<DraftView>(['drafts', 'one', draft.id], (view) => (view ? { ...view, draft } : view))
+}
+
 export const useOpenDrafts = () =>
   useQuery({ queryKey: ['drafts', 'open'], queryFn: () => api<FeatureDraft[]>(`${V1}/drafts`) })
 
@@ -171,6 +192,7 @@ export const useCreateDraft = () =>
     ({ key, title }: { key: string; title?: string }) =>
       api<FeatureDraft>(`${V1}/features/${encodeURIComponent(key)}/drafts`, { method: 'POST', body: { title } }),
     draftKeys,
+    rememberDraft,
   )
 
 export const useRevertToRevision = () =>
@@ -178,6 +200,7 @@ export const useRevertToRevision = () =>
     ({ key, revision }: { key: string; revision: number }) =>
       api<FeatureDraft>(`${V1}/features/${encodeURIComponent(key)}/revisions/${revision}/revert`, { method: 'POST' }),
     draftKeys,
+    rememberDraft,
   )
 
 export const useUpdateDraftEnvironment = () =>
@@ -185,6 +208,7 @@ export const useUpdateDraftEnvironment = () =>
     ({ id, environmentKey, enabled, rules, version }: { id: string; environmentKey: string; enabled: boolean; rules: Rule[]; version: number }) =>
       api<FeatureDraft>(`${V1}/drafts/${id}/environments/${environmentKey}`, { method: 'PUT', body: { enabled, rules, version } }),
     draftKeys,
+    rememberDraft,
   )
 
 export interface DraftMetadata {
@@ -202,6 +226,7 @@ export const useUpdateDraftMetadata = () =>
     ({ id, ...body }: DraftMetadata & { id: string }) =>
       api<FeatureDraft>(`${V1}/drafts/${id}/metadata`, { method: 'PUT', body }),
     draftKeys,
+    rememberDraft,
   )
 
 export const useUpdateDraftPrerequisites = () =>
@@ -209,6 +234,7 @@ export const useUpdateDraftPrerequisites = () =>
     ({ id, prerequisites, version }: { id: string; prerequisites: Prerequisite[]; version: number }) =>
       api<FeatureDraft>(`${V1}/drafts/${id}/prerequisites`, { method: 'PUT', body: { prerequisites, version } }),
     draftKeys,
+    rememberDraft,
   )
 
 type DraftAction = 'request-review' | 'approve' | 'request-changes' | 'comments' | 'discard'
@@ -218,6 +244,10 @@ export const useDraftAction = () =>
     ({ id, action, comment }: { id: string; action: DraftAction; comment?: string }) =>
       api<unknown>(`${V1}/drafts/${id}/${action}`, { method: 'POST', body: action === 'discard' ? undefined : { comment } }),
     draftKeys,
+    // every action answers with the draft, except comments (the new event)
+    (queryClient, result, { action }) => {
+      if (action !== 'comments') rememberDraft(queryClient, result as FeatureDraft)
+    },
   )
 
 export const usePublishDraft = () =>
@@ -225,6 +255,7 @@ export const usePublishDraft = () =>
     ({ id, bypass, reason }: { id: string; bypass?: boolean; reason?: string }) =>
       api<FeatureDraft>(`${V1}/drafts/${id}/publish`, { method: 'POST', query: { bypass: bypass ?? false }, reason }),
     draftKeys,
+    rememberDraft,
   )
 
 export const useRebaseDraft = () =>
@@ -232,6 +263,7 @@ export const useRebaseDraft = () =>
     ({ id, keepDraft, version }: { id: string; keepDraft: boolean; version: number }) =>
       api<FeatureDraft>(`${V1}/drafts/${id}/rebase`, { method: 'POST', query: { keepDraft }, body: { version } }),
     draftKeys,
+    rememberDraft,
   )
 
 export const useReviewSettings = () =>
@@ -326,14 +358,19 @@ export interface AuditFilter {
   entityType?: string
   entityKey?: string
   actor?: string
-  beforeSeq?: number
-  limit?: number
 }
 
-export const useAudit = (filter: AuditFilter) =>
-  useQuery({
-    queryKey: ['audit', filter],
-    queryFn: () => api<AuditEntry[]>(`${V1}/audit`, { query: { ...filter } }),
+/**
+ * Newest first, one page per "load more" (keyset: each page starts below the last seq of the previous one). A refetch
+ * walks the pages again from the first, so entries added meanwhile push the list down instead of opening gaps.
+ */
+export const useAudit = (filter: AuditFilter, pageSize: number) =>
+  useInfiniteQuery({
+    queryKey: ['audit', 'pages', filter, pageSize],
+    queryFn: ({ pageParam }) =>
+      api<AuditEntry[]>(`${V1}/audit`, { query: { ...filter, beforeSeq: pageParam, limit: pageSize } }),
+    initialPageParam: undefined as number | undefined,
+    getNextPageParam: (last) => (last.length >= pageSize ? Math.min(...last.map((e) => e.seq)) : undefined),
   })
 
 export const useVerifyAudit = () =>
@@ -412,15 +449,21 @@ export const useTestWebhook = () =>
 
 /**
  * Whether the signed-in user may change features of this project (mirrors the server rule: admins, or no restriction,
- * or listed among the project's editor roles or users). The server enforces it either way.
+ * or listed among the project's editor roles or users). The server enforces it either way. {@code undefined} while the
+ * projects are not loaded (or failed to load): callers keep edit controls off until it is known.
  */
-export function useCanEditProject(projectKey?: string | null): boolean {
+export function useCanEditProject(projectKey?: string | null): boolean | undefined {
   const user = useAuth()
-  const projects = useProjects().data ?? []
+  const projects = useProjects().data
   if (!user.can('ktoggle-editor')) return false
   if (!projectKey || user.can('ktoggle-admin')) return true
-  const project = projects.find((p) => p.key === projectKey)
-  if (!project || project.editorRoles.length + project.editorUsers.length === 0) return true
+  if (!projects) return undefined
+  return projectEditableBy(projects.find((p) => p.key === projectKey), user)
+}
+
+/** The project part of {@link useCanEditProject}; an unknown project is not restricted (as on the server). */
+export function projectEditableBy(project: Project | undefined, user: CurrentUser): boolean {
+  if (user.can('ktoggle-admin') || !project || project.editorRoles.length + project.editorUsers.length === 0) return true
   return project.editorUsers.includes(user.username) || project.editorRoles.some((r) => user.hasRole(r))
 }
 

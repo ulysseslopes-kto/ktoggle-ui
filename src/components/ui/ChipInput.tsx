@@ -2,7 +2,10 @@ import { X } from 'lucide-react'
 import { useState } from 'react'
 import { Input } from './Form'
 
-/** Editable list of short strings (roles, usernames) shown as chips; Enter adds, the cross removes. */
+/**
+ * Editable list of short strings (roles, usernames) shown as chips; Enter, a comma or leaving the field adds what was
+ * typed (so a Save click never drops it), the cross removes.
+ */
 export function ChipInput({ label, values, onChange, editable, suggestions = [], placeholder }: {
   label: string
   values: string[]
@@ -12,9 +15,12 @@ export function ChipInput({ label, values, onChange, editable, suggestions = [],
   placeholder?: string
 }) {
   const [text, setText] = useState('')
-  const add = (value: string) => {
-    const v = value.trim()
-    if (v && !values.includes(v)) onChange([...values, v])
+  const add = (...items: string[]) => {
+    const next = [...values]
+    for (const v of items.map((item) => item.trim())) {
+      if (v && !next.includes(v)) next.push(v)
+    }
+    if (next.length !== values.length) onChange(next)
     setText('')
   }
   return (
@@ -39,7 +45,13 @@ export function ChipInput({ label, values, onChange, editable, suggestions = [],
           <Input
             value={text}
             placeholder={placeholder ?? 'type and press Enter'}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              const parts = e.target.value.split(',')
+              if (parts.length === 1) return setText(e.target.value)
+              add(...parts.slice(0, -1))
+              setText(parts[parts.length - 1])
+            }}
+            onBlur={() => add(text)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()

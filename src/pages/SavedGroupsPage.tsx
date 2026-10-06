@@ -41,12 +41,18 @@ function SavedGroupDialog({ group, onClose }: { group: SavedGroup | 'new'; onClo
       }
       body = { ...common, attributeKey, values: parsed }
     } else {
+      let parsed: Json
       try {
-        body = { ...common, condition: JSON.parse(condition) as Json }
+        parsed = JSON.parse(condition) as Json
       } catch (err) {
         setLocalError(`Invalid JSON: ${err instanceof Error ? err.message : String(err)}`)
         return
       }
+      if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+        setLocalError('The condition must be a JSON object, e.g. {"country": "BR"}.')
+        return
+      }
+      body = { ...common, condition: parsed }
     }
     save.mutate({ key: editing?.key, body }, { onSuccess: onClose })
   }
@@ -114,7 +120,7 @@ function Preview({ group }: { group: SavedGroup }) {
     return (
       <span className="text-soft">
         <Code value={group.attributeKey ?? '—'} /> ·{' '}
-        <span className="font-mono text-xs font-semibold text-kto-yellow">{group.values?.length ?? 0}</span> valores
+        <span className="font-mono text-xs font-semibold text-kto-yellow">{group.values?.length ?? 0}</span> values
       </span>
     )
   }
