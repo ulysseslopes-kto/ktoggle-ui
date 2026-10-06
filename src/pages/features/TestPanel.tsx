@@ -1,26 +1,33 @@
-import { CheckCircle2, CircleSlash, FlaskConical } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, CircleSlash, FlaskConical } from 'lucide-react'
 import { useState } from 'react'
-import { useSimulate } from '@/api/hooks'
-import type { EnvironmentSettings, Environment, Json } from '@/api/types'
+import { useAttributes, useSimulate } from '@/api/hooks'
+import type { Environment, FeatureSnapshot, Json } from '@/api/types'
 import { Button } from '@/components/ui/Button'
 import { Badge, Card, ErrorBanner, ValueChip } from '@/components/ui/Display'
 import { Field, Input, Select, Textarea } from '@/components/ui/Form'
 import { ExperimentAssignmentView } from './ExperimentAssignmentView'
 import { fromLocalInput } from './schedule'
+import { suggestAttributes } from './testAttributes'
 
 /** "Test feature": evaluates the flag with the official GrowthBook SDK — live, or as the selected draft would be. */
-export function TestPanel({ featureKey, environments, proposed }: {
+export function TestPanel({ featureKey, environments, content, draft }: {
   featureKey: string
   environments: Environment[]
-  /** Environments of the selected draft: the test then evaluates what would be published. */
-  proposed?: Record<string, EnvironmentSettings>
+  /** What is being looked at: the published feature, or the selected draft. */
+  content: FeatureSnapshot
+  /** The selected draft, if any: the test then evaluates what would be published (default value, prerequisites, rules). */
+  draft?: FeatureSnapshot
 }) {
   const [environmentKey, setEnvironmentKey] = useState(environments[0]?.key ?? '')
-  const [attributes, setAttributes] = useState('{\n  "id": "user-123",\n  "country": "BR"\n}')
+  // Until the user types, the attributes follow the rules of the selected environment.
+  const [edited, setEdited] = useState<string | null>(null)
   const [parseError, setParseError] = useState(false)
   const [at, setAt] = useState('')
   const simulate = useSimulate()
-  const draft = proposed ? (proposed[environmentKey] ?? { enabled: false, rules: [] }) : null
+  const catalog = useAttributes().data ?? []
+  const settings = content.environments[environmentKey]
+  const environmentName = environments.find((e) => e.key === environmentKey)?.name ?? environmentKey
+  const attributes = edited ?? JSON.stringify(suggestAttributes(settings?.rules ?? [], catalog), null, 2)
 
   const run = () => {
     let parsed: Json
@@ -31,7 +38,7 @@ export function TestPanel({ featureKey, environments, proposed }: {
       setParseError(true)
       return
     }
-    simulate.mutate({ featureKey, environmentKey, attributes: parsed, proposed: draft ?? undefined, at: fromLocalInput(at) ?? undefined })
+    simulate.mutate({ featureKey, environmentKey, attributes: parsed, proposedFeature: draft, at: fromLocalInput(at) ?? undefined })
   }
 
   const result = simulate.data
@@ -47,8 +54,28 @@ export function TestPanel({ featureKey, environments, proposed }: {
               ))}
             </Select>
           </Field>
-          <Field label="User attributes (JSON)" error={parseError ? 'Invalid JSON' : null}>
-            <Textarea rows={6} value={attributes} onChange={(e) => setAttributes(e.target.value)} spellCheck={false} />
+          {settings?.enabled !== true && (
+            <p className="flex items-start gap-2 rounded-md bg-kto-yellow/15 px-3 py-2 text-xs text-kto-yellow">
+              <AlertTriangle className="mt-px size-4 shrink-0" />
+              <span>
+                This feature is off in {environmentName}{draft ? ' in this draft' : ''}. SDKs do not receive it there, so
+                every user gets the fallback value coded in the app.
+              </span>
+            </p>
+          )}
+          <Field
+            label="Attributes of the test user"
+            hint={
+              <>
+                The JSON your app passes to the SDK for this user. Prefilled from the rules of this environment.
+                {edited !== null && (
+                  <> <button type="button" className="text-kto-red hover:underline" onClick={() => setEdited(null)}>Reset</button></>
+                )}
+              </>
+            }
+            error={parseError ? 'Invalid JSON' : null}
+          >
+            <Textarea rows={6} value={attributes} onChange={(e) => setEdited(e.target.value)} spellCheck={false} />
           </Field>
           <Field label="Evaluate at" hint="Leave empty for now. Useful to check scheduled rules.">
             <Input type="datetime-local" value={at} onChange={(e) => setAt(e.target.value)} />

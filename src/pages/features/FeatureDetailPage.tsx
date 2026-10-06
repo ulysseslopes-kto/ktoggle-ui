@@ -200,7 +200,7 @@ export function FeatureDetailPage() {
         )}
       </section>
 
-      <TestPanel featureKey={f.key} environments={envs} proposed={draft?.proposed.environments} />
+      <TestPanel featureKey={f.key} environments={envs} content={content} draft={draft?.proposed} />
       <RevisionsCard feature={f} onDraftCreated={(d) => selectDraft(d.id)} />
 
       <MetadataDialog open={editingMetadata} onOpenChange={setEditingMetadata} content={content} ensureDraft={ensureDraft} />

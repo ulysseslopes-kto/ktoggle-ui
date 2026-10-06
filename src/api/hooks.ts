@@ -21,6 +21,7 @@ import type {
   EvaluationResult,
   Feature,
   FeatureDraft,
+  FeatureSnapshot,
   ImportReport,
   MigrationStatus,
   FeatureRevision,
@@ -247,7 +248,15 @@ export const useSaveReviewSettings = () =>
 
 export const useSimulate = () =>
   useMutation({
-    mutationFn: (body: { featureKey: string; environmentKey: string; attributes: Json; proposed?: EnvironmentSettings; at?: string }) =>
+    mutationFn: (body: {
+      featureKey: string
+      environmentKey: string
+      attributes: Json
+      proposed?: EnvironmentSettings
+      /** a whole draft: its default value and prerequisites apply too, not only its rules */
+      proposedFeature?: FeatureSnapshot
+      at?: string
+    }) =>
       api<EvaluationResult>(`${V1}/simulate`, { method: 'POST', body }),
   })
 
