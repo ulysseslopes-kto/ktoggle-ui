@@ -67,7 +67,7 @@ export function TestPanel({ featureKey, environments, content, draft }: {
             label="Attributes of the test user"
             hint={
               <>
-                The JSON your app passes to the SDK for this user. Prefilled from the rules of this environment.
+                The JSON your app passes to the SDK for this user. Prefilled from the rules being tested.
                 {edited !== null && (
                   <> <button type="button" className="text-kto-red hover:underline" onClick={() => setEdited(null)}>Reset</button></>
                 )}
